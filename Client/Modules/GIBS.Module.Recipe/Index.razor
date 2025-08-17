@@ -1,0 +1,83 @@
+@using GIBS.Module.Recipe.Services
+@using GIBS.Module.Recipe.Models
+
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject IRecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Index> Localizer
+
+@if (_Recipes == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+    <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add Recipe" ResourceKey="Add" />
+        <ActionLink Action="Ingredients" Security="SecurityAccessLevel.Edit" Text="Manage Ingredients" ResourceKey="Ingredient" />
+        <ActionLink Action="Units" Security="SecurityAccessLevel.Edit" Text="Manage Units" ResourceKey="Unit" />
+    </div>
+    <br />
+    <br />
+    @if (@_Recipes.Count != 0)
+    {
+        <Pager Items="@_Recipes">
+            <Header>
+                <th style="width: 1px;">&nbsp;</th>
+                <th style="width: 1px;">&nbsp;</th>
+                <th>@Localizer["Name"]</th>
+            </Header>
+            <Row>
+                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.RecipeId.ToString())" ResourceKey="Edit"  /></td>
+                <td><ActionDialog Header="Delete Recipe" Message="Are You Sure You Wish To Delete This Recipe?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.RecipeId.ToString()" /></td>
+                <td>@context.Name</td>
+            </Row>
+        </Pager>
+    }
+    else
+    {
+        <p>@Localizer["Message.DisplayNone"]</p>
+    }
+}
+
+@code {
+    public override string RenderMode => RenderModes.Static;
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" },
+        new Resource { ResourceType = ResourceType.Script, Url = ModulePath() + "Module.js" }
+    };
+
+    List<Recipe> _Recipes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _Recipes = await RecipeService.GetRecipesAsync(ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading Recipe {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    private async Task Delete(Recipe Recipe)
+    {
+        try
+        {
+            await RecipeService.DeleteRecipeAsync(Recipe.RecipeId, ModuleState.ModuleId);
+            await logger.LogInformation("Recipe Deleted {Recipe}", Recipe);
+            _Recipes = await RecipeService.GetRecipesAsync(ModuleState.ModuleId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Deleting Recipe {Recipe} {Error}", Recipe, ex.Message);
+            AddModuleMessage(Localizer["Message.DeleteError"], MessageType.Error);
+        }
+    }
+}

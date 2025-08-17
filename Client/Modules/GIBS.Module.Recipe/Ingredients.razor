@@ -1,0 +1,139 @@
+﻿@using Oqtane.Modules.Controls
+@using GIBS.Module.Recipe.Services
+@using GIBS.Module.Recipe.Models
+
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject IRecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Ingredients> Localizer
+
+<h3>Ingredients</h3>
+
+@if (_ingredients == null)
+{
+    <p><em>@Localizer["Loading..."]</em></p>
+}
+else
+{
+    <div class="card mt-3">
+        <div class="card-header">@(_editingIngredient == null ? "Add New Ingredient" : "Edit Ingredient")</div>
+        <div class="card-body">
+            <div class="row mb-2">
+                <div class="col">
+                    <Label For="name" HelpText="Enter the ingredient name">Name:</Label>
+                    <input id="name" class="form-control" @bind="@_newIngredient.Name" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-success" @onclick="SaveIngredient">@(_editingIngredient == null ? Localizer["Add"] : Localizer["Update"])</button>
+            @if (_editingIngredient != null)
+            {
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">@Localizer["Cancel"]</button>
+            }
+        </div>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ingredient in _ingredients)
+            {
+                <tr>
+                    <td>@ingredient.Name</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditIngredient(ingredient)">@Localizer["Edit"]</button>
+                        <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteIngredient(ingredient.IngredientId)">@Localizer["Delete"]</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+
+}
+
+@code {
+    private List<Ingredient> _ingredients;
+    private Ingredient _newIngredient = new Ingredient();
+    private Ingredient _editingIngredient;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadIngredients();
+    }
+
+    private async Task LoadIngredients()
+    {
+        _ingredients = await RecipeService.GetIngredientsAsync(ModuleState.ModuleId);
+        StateHasChanged();
+    }
+
+    private async Task SaveIngredient()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_newIngredient.Name))
+            {
+                if (_editingIngredient == null) // Add new
+                {
+                    _newIngredient.ModuleId = ModuleState.ModuleId;
+                    await RecipeService.AddIngredientAsync(_newIngredient);
+                }
+                else // Update existing
+                {
+                    _editingIngredient.Name = _newIngredient.Name;
+                    await RecipeService.UpdateIngredientAsync(_editingIngredient);
+                }
+                await LoadIngredients();
+                CancelEdit();
+            }
+            else
+            {
+                AddModuleMessage("Please enter an ingredient name.", MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error saving ingredient: {Error}", ex.Message);
+            AddModuleMessage("Error saving ingredient.", MessageType.Error);
+        }
+    }
+
+    private void EditIngredient(Ingredient ingredient)
+    {
+        _editingIngredient = ingredient;
+        _newIngredient = new Ingredient
+        {
+            IngredientId = ingredient.IngredientId,
+            Name = ingredient.Name,
+            ModuleId = ingredient.ModuleId
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingIngredient = null;
+        _newIngredient = new Ingredient();
+    }
+
+    private async Task DeleteIngredient(int ingredientId)
+    {
+        try
+        {
+            await RecipeService.DeleteIngredientAsync(ingredientId, ModuleState.ModuleId);
+            await LoadIngredients();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error deleting ingredient: {Error}", ex.Message);
+            AddModuleMessage("Error deleting ingredient.", MessageType.Error);
+        }
+    }
+}

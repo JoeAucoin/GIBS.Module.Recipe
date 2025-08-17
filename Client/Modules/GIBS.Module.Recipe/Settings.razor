@@ -1,0 +1,109 @@
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject ISettingService SettingService
+@inject IStringLocalizer<Settings> Localizer
+@inject IFolderService FolderService
+
+<div class="container">
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="featuredCount" HelpText="How many featured properties should display?" ResourceKey="FeaturedCount" ResourceType="@resourceType">Featured Count: </Label>
+        <div class="col-sm-9">
+            <input id="featuredCount" type="text" class="form-control" @bind="@_featuredCount" />
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="folderList" HelpText="Select the image folder" ResourceKey="ImageFolder" ResourceType="@resourceType">Image Folder: </Label>
+        <div class="col-sm-9">
+            <select id="folderList" class="form-select" @bind="@_imageFolder">
+                @foreach (Folder folder in _folders)
+                {
+                    <option value="@(folder.FolderId)">@(new string('-', folder.Level * 2))@(folder.Name)</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="imageMaxWidth" HelpText="The maximum width for uploaded images (in pixels). The image will be resized if it exceeds this value." ResourceKey="ImageMaxWidth">Max Image Width: </Label>
+        <div class="col-sm-9">
+            <input id="imageMaxWidth" type="number" class="form-control" @bind="@_imageMaxWidth" />
+        </div>
+    </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="imageMaxHeight" HelpText="The maximum height for uploaded images (in pixels). The image will be resized if it exceeds this value." ResourceKey="ImageMaxHeight">Max Image Height: </Label>
+        <div class="col-sm-9">
+            <input id="imageMaxHeight" type="number" class="form-control" @bind="@_imageMaxHeight" />
+        </div>
+    </div>
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="featuredLabel" HelpText="Enter Featured Label" ResourceKey="FeaturedLabel" ResourceType="@resourceType">New/Featured Label: </Label>
+        <div class="col-sm-9">
+            <input id="featuredLabel" class="form-control" @bind="@_featuredLabel" required />
+        </div>
+    </div>
+
+
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="showRecipeCount" HelpText="Show Phone field" ResourceKey="ShowRecipeCount" ResourceType="@resourceType">Show Recipe Count: </Label>
+        <div class="col-sm-9">
+            <input type="checkbox" id="showRecipeCount" class="form-check-input" @bind="@_showRecipeCount" />
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private string resourceType = "GIBS.Module.Recipe.Settings, GIBS.Module.Recipe.Client.Oqtane"; // for localization
+    public override string Title => "Recipe Settings";
+
+    private string _featuredCount;
+    private string _imageFolder;
+    private string _imageMaxWidth;
+    private string _imageMaxHeight;
+    private bool _showRecipeCount;
+    private string _featuredLabel = "Featured Recipe";
+
+    private List<Folder> _folders = new List<Folder>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _folders = await FolderService.GetFoldersAsync(PageState.Site.SiteId);
+            
+            Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            _featuredCount = SettingService.GetSetting(settings, "FeaturedCount", "8");
+            _imageFolder = SettingService.GetSetting(settings, "ImageFolder", "Root");
+            _imageMaxWidth = SettingService.GetSetting(settings, "ImageMaxWidth", "800");
+            _imageMaxHeight = SettingService.GetSetting(settings, "ImageMaxHeight", "600");
+            _showRecipeCount = bool.Parse(SettingService.GetSetting(settings, "ShowRecipeCount", "true"));
+            _featuredLabel = SettingService.GetSetting(settings, "FeaturedLabel", "Featured Recipe");
+
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+
+    public async Task UpdateSettings()
+    {
+        try
+        {
+            Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            SettingService.SetSetting(settings, "FeaturedCount", _featuredCount);
+            SettingService.SetSetting(settings, "ImageFolder", _imageFolder);
+            SettingService.SetSetting(settings, "ImageMaxWidth", _imageMaxWidth);
+            SettingService.SetSetting(settings, "ImageMaxHeight", _imageMaxHeight);
+            SettingService.SetSetting(settings, "ShowRecipeCount", _showRecipeCount.ToString());
+            SettingService.SetSetting(settings, "FeaturedLabel", _featuredLabel);
+            
+            await SettingService.UpdateModuleSettingsAsync(settings, ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage(ex.Message, MessageType.Error);
+        }
+    }
+}

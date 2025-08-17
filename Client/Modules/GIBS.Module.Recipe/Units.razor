@@ -1,0 +1,137 @@
+﻿@using Oqtane.Modules.Controls
+@using GIBS.Module.Recipe.Services
+@using GIBS.Module.Recipe.Models
+
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject IRecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Units> Localizer
+
+<h3>Units</h3>
+
+@if (_units == null)
+{
+    <p><em>@Localizer["Loading..."]</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var unit in _units)
+            {
+                <tr>
+                    <td>@unit.Name</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditUnit(unit)">@Localizer["Edit"]</button>
+                        <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteUnit(unit.UnitId)">@Localizer["Delete"]</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="card mt-3">
+        <div class="card-header">@(_editingUnit == null ? "Add New Unit" : "Edit Unit")</div>
+        <div class="card-body">
+            <div class="row mb-2">
+                <div class="col">
+                    <Label For="name" HelpText="Enter the unit name">Name:</Label>
+                    <input id="name" class="form-control" @bind="@_newUnit.Name" />
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button type="button" class="btn btn-success" @onclick="SaveUnit">@(_editingUnit == null ? Localizer["Add"] : Localizer["Update"])</button>
+            @if (_editingUnit != null)
+            {
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">@Localizer["Cancel"]</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<Unit> _units;
+    private Unit _newUnit = new Unit();
+    private Unit _editingUnit;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUnits();
+    }
+
+    private async Task LoadUnits()
+    {
+        _units = await RecipeService.GetUnitsAsync(ModuleState.ModuleId);
+        StateHasChanged();
+    }
+
+    private async Task SaveUnit()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_newUnit.Name))
+            {
+                if (_editingUnit == null) // Add new
+                {
+                    _newUnit.ModuleId = ModuleState.ModuleId;
+                    await RecipeService.AddUnitAsync(_newUnit);
+                }
+                else // Update existing
+                {
+                    _editingUnit.Name = _newUnit.Name;
+                    await RecipeService.UpdateUnitAsync(_editingUnit);
+                }
+                await LoadUnits();
+                CancelEdit();
+            }
+            else
+            {
+                AddModuleMessage("Please enter a unit name.", MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error saving unit: {Error}", ex.Message);
+            AddModuleMessage("Error saving unit.", MessageType.Error);
+        }
+    }
+
+    private void EditUnit(Unit unit)
+    {
+        _editingUnit = unit;
+        _newUnit = new Unit
+        {
+            UnitId = unit.UnitId,
+            Name = unit.Name,
+            ModuleId = unit.ModuleId
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingUnit = null;
+        _newUnit = new Unit();
+    }
+
+    private async Task DeleteUnit(int unitId)
+    {
+        try
+        {
+            await RecipeService.DeleteUnitAsync(unitId, ModuleState.ModuleId);
+            await LoadUnits();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error deleting unit: {Error}", ex.Message);
+            AddModuleMessage("Error deleting unit.", MessageType.Error);
+        }
+    }
+}

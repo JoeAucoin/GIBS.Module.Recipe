@@ -1,0 +1,656 @@
+@using Oqtane.Modules.Controls
+@using GIBS.Module.Recipe.Services
+@using GIBS.Module.Recipe.Models
+
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject IRecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject ISettingService SettingService
+@inject IStringLocalizer<Edit> Localizer
+@inject IFileService FileService
+
+<form @ref="form" class="@(validated ? " was-validated" : "needs-validation")" novalidate>
+    <div class="container">
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="name" HelpText="Enter a name for the recipe" ResourceKey="Name">Name: </Label>
+            <div class="col-sm-9">
+                <input id="name" class="form-control" @bind="@_name" required />
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="description" HelpText="Enter a description for the recipe" ResourceKey="Description">Description: </Label>
+            <div class="col-sm-9">
+                <textarea id="description" class="form-control" @bind="@_description" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="servings" HelpText="Enter the number of servings" ResourceKey="Servings">Servings: </Label>
+            <div class="col-sm-3">
+                <input id="servings" type="number" class="form-control" @bind="@_servings" />
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="prepTime" HelpText="Enter the prep time" ResourceKey="PrepTime">Prep Time: </Label>
+            <div class="col-sm-3">
+                <input id="prepTime" class="form-control" @bind="@_prepTime" />
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="cookTime" HelpText="Enter the cook time" ResourceKey="CookTime">Cook Time: </Label>
+            <div class="col-sm-3">
+                <input id="cookTime" class="form-control" @bind="@_cookTime" />
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="instructions" HelpText="Enter the recipe instructions" ResourceKey="Instructions">Instructions: </Label>
+            <div class="col-sm-9">
+                <textarea id="instructions" class="form-control" @bind="@_instructions" rows="10"></textarea>
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="upload" HelpText="Upload the file you want" ResourceKey="Label.UploadImage">Image: </Label>
+            <div class="col-sm-9">
+                <FileManager UploadMultiple="false" Filter="jpg,png,gif,jpeg"
+                             FolderId="@_folderId"
+                             ShowSuccess="true" ShowFolders="false" ShowFiles="false" ShowImage="true"
+                             OnUpload="@HandleFileUpload" />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="imageURL" HelpText="Upload or enter an image URL." ResourceKey="Label.ImageURL">@Localizer["Label.ImageURL"]</Label>
+            <div class="col-sm-9">
+                <input id="imageURL" class="form-control mb-1" @bind="@_imageURL" placeholder="Paste or enter image URL" />
+
+                @if (!string.IsNullOrEmpty(_imageURL))
+                {
+                    <img src="@_imageURL" alt="Image preview" style="max-width: 280px; max-height: 200px; margin-top: 5px; margin-bottom: 10px;" />
+                }
+            </div>
+        </div>
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="isFeatured" HelpText="Check if this is a featured item." ResourceKey="Label.IsFeatured">@Localizer["Label.IsFeatured"]</Label>
+            <div class="col-sm-9">
+                <input id="isFeatured" type="checkbox" class="form-check-input" @bind="_isFeatured" />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="isActive" HelpText="Check if this recipe is active." ResourceKey="Label.IsActive">@Localizer["Label.IsActive"]</Label>
+            <div class="col-sm-9">
+                <input id="isActive" type="checkbox" class="form-check-input" @bind="_isActive" />
+            </div>
+        </div>
+
+    </div>
+    <button type="button" class="btn btn-success" @onclick="Save">@Localizer["Save"]</button>
+    <NavLink class="btn btn-secondary" href="@NavigateUrl()">@Localizer["Cancel"]</NavLink>
+    <br /><br />
+    @if (PageState.Action == "Edit")
+    {
+        <hr />
+        <h5>Ingredients</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (_recipeIngredients != null)
+                {
+                    @foreach (var ri in _recipeIngredients)
+                    {
+                        <tr>
+                            <td>@ri.Ingredient.Name</td>
+                            <td>@ri.Quantity</td>
+                            <td>@ri.Unit.Name</td>
+                            <td>@ri.Notes</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditIngredient(ri)">Edit</button>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteIngredient(ri.RecipeIngredientId)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <div class="card mt-3">
+            <div class="card-header">@(_editingIngredient == null ? "Add New Ingredient" : "Edit Ingredient")</div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col">
+                        <Label For="ingredient" HelpText="Select an ingredient">Ingredient:</Label>
+                        <select id="ingredient" class="form-select" @bind="@_newRecipeIngredient.IngredientId">
+                            <option value="0">&lt;Select Ingredient&gt;</option>
+                            @if (_allIngredients != null)
+                            {
+                                @foreach (var ingredient in _allIngredients)
+                                {
+                                    <option value="@ingredient.IngredientId">@ingredient.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col">
+                        <Label For="quantity" HelpText="Enter quantity">Quantity:</Label>
+                        <input id="quantity" type="number" class="form-control" @bind="@_newRecipeIngredient.Quantity" />
+                    </div>
+                    <div class="col">
+                        <Label For="unit" HelpText="Select a unit">Unit:</Label>
+                        <select id="unit" class="form-select" @bind="@_newRecipeIngredient.UnitId">
+                            <option value="0">&lt;Select Unit&gt;</option>
+                            @if (_allUnits != null)
+                            {
+                                @foreach (var unit in _allUnits)
+                                {
+                                    <option value="@unit.UnitId">@unit.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <Label For="notes" HelpText="Enter any notes">Notes:</Label>
+                        <input id="notes" class="form-control" @bind="@_newRecipeIngredient.Notes" />
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="button" class="btn btn-success" @onclick="SaveIngredient">@(_editingIngredient == null ? "Add" : "Update")</button>
+                @if (_editingIngredient != null)
+                {
+                    <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                }
+            </div>
+        </div>
+        <hr />
+        <h5>Steps</h5>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Instructions</th>
+                    <th>Image</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (_steps != null)
+                {
+                    @foreach (var step in _steps.OrderBy(s => s.Name))
+                    {
+                        <tr>
+                            <td style="width:70px;">@step.Name</td>
+                            <td>@step.Instructions</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(step.ImageURL))
+                                {
+                                    <img src="@step.ImageURL" style="max-width: 100px; max-height: 75px;" />
+                                }
+                            </td>
+                            <td style="width:130px;">
+                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditStep(step)">Edit</button>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteStep(step.StepId)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <div class="card mt-3">
+            <div class="card-header">@(_editingStep == null ? "Add New Step" : "Edit Step")</div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-2">
+                        <Label For="stepName" HelpText="The name of the step (auto-generated)">Name:</Label>
+                        <input id="stepName" class="form-control" @bind="@_newStep.Name" />
+                    </div>
+                    <div class="col-10">
+                        <Label For="stepInstructions" HelpText="Enter the instructions for the step">Instructions:</Label>
+                        <textarea id="stepInstructions" class="form-control" @bind="@_newStep.Instructions" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-1 align-items-center">
+                    <Label Class="col-sm-2" For="stepUpload" HelpText="Upload an image for the step">Image: </Label>
+                    <div class="col-sm-10">
+                        <FileManager UploadMultiple="false" Filter="jpg,png,gif,jpeg"
+                                     FolderId="@_folderId"
+                                     ShowSuccess="true" ShowFolders="false" ShowFiles="false" ShowImage="true"
+                                     OnUpload="@HandleStepFileUpload" />
+                    </div>
+                </div>
+                <div class="row mb-1 align-items-center">
+                    <Label Class="col-sm-2" For="stepImageURL" HelpText="Upload or enter an image URL.">Image URL:</Label>
+                    <div class="col-sm-10">
+                        <input id="stepImageURL" class="form-control mb-1" @bind="@_newStep.ImageURL" placeholder="Paste or enter image URL" />
+
+                        @if (!string.IsNullOrEmpty(_newStep.ImageURL))
+                        {
+                            <img src="@_newStep.ImageURL" alt="Image preview" style="max-width: 280px; max-height: 200px; margin-top: 5px; margin-bottom: 10px;" />
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button type="button" class="btn btn-success" @onclick="SaveStep">@(_editingStep == null ? "Add" : "Update")</button>
+                @if (_editingStep != null)
+                {
+                    <button type="button" class="btn btn-secondary" @onclick="CancelEditStep">Cancel</button>
+                }
+            </div>
+        </div>
+        <hr />
+    }
+    @if (PageState.Action == "Edit")
+    {
+        <AuditInfo CreatedBy="@_createdby" CreatedOn="@_createdon" ModifiedBy="@_modifiedby" ModifiedOn="@_modifiedon"></AuditInfo>
+    }
+</form>
+
+@code {
+    public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
+
+    public override string Actions => "Add,Edit";
+
+    public override string Title => "Manage Recipe";
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" }
+    };
+
+    private ElementReference form;
+    private bool validated = false;
+
+    private int _id;
+    private string _name;
+    private string _description;
+    private string _instructions;
+    private int _servings;
+    private string _prepTime;
+    private string _cookTime;
+
+    private List<RecipeIngredient> _recipeIngredients;
+    private List<Ingredient> _allIngredients;
+    private List<Unit> _allUnits;
+    private RecipeIngredient _newRecipeIngredient = new RecipeIngredient();
+    private RecipeIngredient _editingIngredient;
+
+    private List<Step> _steps;
+    private Step _newStep = new Step();
+    private Step _editingStep;
+
+    private string _createdby;
+    private DateTime _createdon;
+    private string _modifiedby;
+    private DateTime _modifiedon;
+
+    private int _folderId = 1;
+    private int _imageMaxWidth; // Set your max width here
+    private int _imageMaxHeight; // Set your max height here
+    private bool _isActive = true; // Assuming you want to keep the recipe active by default
+    private bool _isFeatured = false; // Assuming you want to keep the recipe not featured by default
+
+    private string _imageURL;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Correctly parse the setting as an integer
+            if (int.TryParse(SettingService.GetSetting(ModuleState.Settings, "ImageFolder", "1"), out int folderId))
+            {
+                _folderId = folderId;
+            }
+            else
+            {
+                // Handle the case where the setting is not a valid integer
+                _folderId = 1; // Default value or handle error
+            }
+
+            if (!int.TryParse(SettingService.GetSetting(ModuleState.Settings, "ImageMaxWidth", "800"), out _imageMaxWidth))
+            {
+                _imageMaxWidth = 800;
+            }
+            if (!int.TryParse(SettingService.GetSetting(ModuleState.Settings, "ImageMaxHeight", "600"), out _imageMaxHeight))
+            {
+                _imageMaxHeight = 600;
+            }
+
+            if (PageState.Action == "Edit")
+            {
+                _id = Int32.Parse(PageState.QueryString["id"]);
+                Models.Recipe recipe = await RecipeService.GetRecipeAsync(_id, ModuleState.ModuleId);
+                if (recipe != null)
+                {
+                    _name = recipe.Name;
+                    _description = recipe.Description;
+                    _imageURL = recipe.ImageURL;
+                    _instructions = recipe.Instructions;
+                    _servings = recipe.Servings;
+                    _prepTime = recipe.PrepTime;
+                    _cookTime = recipe.CookTime;
+                    _isFeatured = recipe.IsFeatured;
+                    _isActive = recipe.IsActive;
+
+                    _createdby = recipe.CreatedBy;
+                    _createdon = recipe.CreatedOn;
+                    _modifiedby = recipe.ModifiedBy;
+                    _modifiedon = recipe.ModifiedOn;
+
+                    await LoadIngredients();
+                    await LoadSteps();
+                    _newStep.Name = $"Step {(_steps?.Count ?? 0) + 1}:";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading Recipe {RecipeId} {Error}", _id, ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    private async Task LoadIngredients()
+    {
+        _recipeIngredients = await RecipeService.GetRecipeIngredientsAsync(_id, ModuleState.ModuleId);
+        _allIngredients = await RecipeService.GetIngredientsAsync(ModuleState.ModuleId);
+        _allUnits = await RecipeService.GetUnitsAsync(ModuleState.ModuleId);
+    }
+
+    private async Task LoadSteps()
+    {
+        _steps = await RecipeService.GetStepsAsync(_id, ModuleState.ModuleId);
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            validated = true;
+            var interop = new Oqtane.UI.Interop(JSRuntime);
+            if (await interop.FormValid(form))
+            {
+                if (PageState.Action == "Add")
+                {
+                    Models.Recipe recipe = new Models.Recipe();
+                    recipe.ModuleId = ModuleState.ModuleId;
+                    recipe.Name = _name;
+                    recipe.Description = _description;
+                    recipe.Instructions = _instructions;
+                    recipe.Servings = _servings;
+                    recipe.PrepTime = _prepTime;
+                    recipe.CookTime = _cookTime;
+                    recipe.ImageURL = _imageURL;
+                    recipe.IsActive = _isActive;
+                    recipe.IsFeatured = _isFeatured;
+                    recipe = await RecipeService.AddRecipeAsync(recipe);
+                    await logger.LogInformation("Recipe Added {Recipe}", recipe);
+                    // Navigate to edit mode to allow adding ingredients
+                    NavigationManager.NavigateTo(NavigateUrl("Edit", "id=" + recipe.RecipeId));
+                }
+                else
+                {
+                    Models.Recipe recipe = await RecipeService.GetRecipeAsync(_id, ModuleState.ModuleId);
+                    recipe.Name = _name;
+                    recipe.Description = _description;
+                    recipe.Instructions = _instructions;
+                    recipe.Servings = _servings;
+                    recipe.PrepTime = _prepTime;
+                    recipe.CookTime = _cookTime;
+                    recipe.ImageURL = _imageURL;
+                    recipe.IsActive = _isActive;
+                    recipe.IsFeatured = _isFeatured;
+                    await RecipeService.UpdateRecipeAsync(recipe);
+                    await logger.LogInformation("Recipe Updated {Recipe}", recipe);
+                    NavigationManager.NavigateTo(NavigateUrl());
+                }
+            }
+            else
+            {
+                AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Saving Recipe {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
+        }
+    }
+
+    private async Task SaveIngredient()
+    {
+        try
+        {
+            if (_newRecipeIngredient.IngredientId != 0 && _newRecipeIngredient.UnitId != 0 && _newRecipeIngredient.Quantity > 0)
+            {
+                if (_editingIngredient == null) // Add new
+                {
+                    _newRecipeIngredient.RecipeId = _id;
+                    _newRecipeIngredient.ModuleId = ModuleState.ModuleId;
+                    await RecipeService.AddRecipeIngredientAsync(_newRecipeIngredient);
+                }
+                else // Update existing
+                {
+                    _editingIngredient.IngredientId = _newRecipeIngredient.IngredientId;
+                    _editingIngredient.Quantity = _newRecipeIngredient.Quantity;
+                    _editingIngredient.UnitId = _newRecipeIngredient.UnitId;
+                    _editingIngredient.Notes = _newRecipeIngredient.Notes;
+                    await RecipeService.UpdateRecipeIngredientAsync(_editingIngredient);
+                }
+                await LoadIngredients();
+                CancelEdit();
+            }
+            else
+            {
+                AddModuleMessage("Please select an ingredient, unit, and specify a valid quantity.", MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error saving ingredient: {Error}", ex.Message);
+            AddModuleMessage("Error saving ingredient.", MessageType.Error);
+        }
+    }
+
+    private void EditIngredient(RecipeIngredient ingredient)
+    {
+        _editingIngredient = ingredient;
+        _newRecipeIngredient = new RecipeIngredient
+        {
+            RecipeIngredientId = ingredient.RecipeIngredientId,
+            IngredientId = ingredient.IngredientId,
+            Quantity = ingredient.Quantity,
+            UnitId = ingredient.UnitId,
+            Notes = ingredient.Notes
+        };
+    }
+
+    private async void HandleFileUpload(int fileId)
+    {
+        if (fileId > 0)
+        {
+            var uploadedFile = await FileService.GetFileAsync(fileId);
+            if (uploadedFile != null)
+            {
+                // Check if the image exceeds the maximum dimensions from settings
+                if (uploadedFile.ImageWidth > _imageMaxWidth || uploadedFile.ImageHeight > _imageMaxHeight)
+                {
+                    try
+                    {
+                        var resizedFile = await RecipeService.ResizeImageAsync(uploadedFile.FileId, _imageMaxWidth, _imageMaxHeight, ModuleState.ModuleId);
+                        if (resizedFile != null)
+                        {
+                            _imageURL = resizedFile.Url;
+                        }
+                        else
+                        {
+                            // Fallback to original image if resize fails
+                            _imageURL = uploadedFile.Url;
+                            AddModuleMessage("Image resizing failed. Using original image.", MessageType.Warning);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AddModuleMessage($"Error resizing image: {ex.Message}", MessageType.Error);
+                        _imageURL = uploadedFile.Url; // Fallback to original image
+                    }
+                }
+                else
+                {
+                    _imageURL = uploadedFile.Url;
+                }
+            }
+            else
+            {
+                _imageURL = null;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void CancelEdit()
+    {
+        _editingIngredient = null;
+        _newRecipeIngredient = new RecipeIngredient();
+    }
+
+    private async Task DeleteIngredient(int recipeIngredientId)
+    {
+        try
+        {
+            await RecipeService.DeleteRecipeIngredientAsync(recipeIngredientId, ModuleState.ModuleId);
+            await LoadIngredients();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error deleting ingredient: {Error}", ex.Message);
+            AddModuleMessage("Error deleting ingredient.", MessageType.Error);
+        }
+    }
+
+    private async void HandleStepFileUpload(int fileId)
+    {
+        if (fileId > 0)
+        {
+            var uploadedFile = await FileService.GetFileAsync(fileId);
+            if (uploadedFile != null)
+            {
+                // Check if the image exceeds the maximum dimensions from settings
+                if (uploadedFile.ImageWidth > _imageMaxWidth || uploadedFile.ImageHeight > _imageMaxHeight)
+                {
+                    try
+                    {
+                        var resizedFile = await RecipeService.ResizeImageAsync(uploadedFile.FileId, _imageMaxWidth, _imageMaxHeight, ModuleState.ModuleId);
+                        if (resizedFile != null)
+                        {
+                            _newStep.ImageURL = resizedFile.Url;
+                        }
+                        else
+                        {
+                            // Fallback to original image if resize fails
+                            _newStep.ImageURL = uploadedFile.Url;
+                            AddModuleMessage("Image resizing failed. Using original image.", MessageType.Warning);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AddModuleMessage($"Error resizing image: {ex.Message}", MessageType.Error);
+                        _newStep.ImageURL = uploadedFile.Url; // Fallback to original image
+                    }
+                }
+                else
+                {
+                    _newStep.ImageURL = uploadedFile.Url;
+                }
+            }
+            else
+            {
+                _newStep.ImageURL = null;
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveStep()
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(_newStep.Instructions))
+            {
+                if (_editingStep == null) // Add new
+                {
+                    _newStep.RecipeId = _id;
+                    _newStep.ModuleId = ModuleState.ModuleId;
+                    await RecipeService.AddStepAsync(_newStep);
+                }
+                else // Update existing
+                {
+                    _editingStep.Name = _newStep.Name;
+                    _editingStep.Instructions = _newStep.Instructions;
+                    _editingStep.ImageURL = _newStep.ImageURL;
+                    await RecipeService.UpdateStepAsync(_editingStep);
+                }
+                await LoadSteps();
+                CancelEditStep();
+            }
+            else
+            {
+                AddModuleMessage("Please enter valid instructions for the step.", MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error saving step: {Error}", ex.Message);
+            AddModuleMessage("Error saving step.", MessageType.Error);
+        }
+    }
+
+    private void EditStep(Step step)
+    {
+        _editingStep = step;
+        _newStep = new Step
+        {
+            StepId = step.StepId,
+            Name = step.Name,
+            Instructions = step.Instructions,
+            ImageURL = step.ImageURL
+        };
+    }
+
+
+    private void CancelEditStep()
+    {
+        _editingStep = null;
+        _newStep = new Step();
+        if (_steps != null)
+        {
+            _newStep.Name = $"Step {(_steps.Count + 1)}:";
+        }
+    }
+
+    private async Task DeleteStep(int stepId)
+    {
+        try
+        {
+            await RecipeService.DeleteStepAsync(stepId, ModuleState.ModuleId);
+            await LoadSteps();
+            _newStep.Name = $"Step {(_steps?.Count ?? 0) + 1}:";
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error deleting step: {Error}", ex.Message);
+            AddModuleMessage("Error deleting step.", MessageType.Error);
+        }
+    }
+}
