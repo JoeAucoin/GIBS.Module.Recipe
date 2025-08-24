@@ -341,5 +341,71 @@ namespace GIBS.Module.Recipe.Services
             }
             return Task.CompletedTask;
         }
+
+        public Task<List<Category>> GetCategoriesAsync(int moduleId)
+        {
+            // Add authorization as needed
+            return Task.FromResult(_recipeRepository.GetCategories(moduleId).ToList());
+        }
+
+        public Task<Category> GetCategoryAsync(int categoryId, int moduleId)
+        {
+            // Add authorization as needed
+            return Task.FromResult(_recipeRepository.GetCategory(categoryId));
+        }
+
+        public Task<Category> AddCategoryAsync(Category category)
+        {
+            // Add authorization as needed
+            category = _recipeRepository.AddCategory(category);
+            return Task.FromResult(category);
+        }
+
+        public Task<Category> UpdateCategoryAsync(Category category)
+        {
+            // Add authorization as needed
+            category = _recipeRepository.UpdateCategory(category);
+            return Task.FromResult(category);
+        }
+
+        public Task DeleteCategoryAsync(int categoryId, int moduleId)
+        {
+            // Add authorization as needed
+            _recipeRepository.DeleteCategory(categoryId);
+            return Task.CompletedTask;
+        }
+
+        public Task<List<RecipeCategory>> GetRecipeCategoriesAsync(int recipeId, int moduleId)
+        {
+            // Add authorization as needed
+            return Task.FromResult(_recipeRepository.GetRecipeCategories(recipeId).ToList());
+        }
+
+        public Task<RecipeCategory> GetRecipeCategoryAsync(int recipeCategoryId, int moduleId)
+        {
+            // Add authorization as needed
+            return Task.FromResult(_recipeRepository.GetRecipeCategory(recipeCategoryId));
+        }
+
+        public Task<RecipeCategory> AddRecipeCategoryAsync(RecipeCategory recipeCategory)
+        {
+            // Add authorization as needed
+            recipeCategory = _recipeRepository.AddRecipeCategory(recipeCategory);
+            return Task.FromResult(recipeCategory);
+        }
+
+        public Task<RecipeCategory> UpdateRecipeCategoryAsync(RecipeCategory recipeCategory)
+        {
+            // Add authorization as needed
+            recipeCategory = _recipeRepository.UpdateRecipeCategory(recipeCategory);
+            return Task.FromResult(recipeCategory);
+        }
+
+        public Task DeleteRecipeCategoryAsync(int recipeCategoryId, int moduleId)
+        {
+            // Add authorization as needed
+            _recipeRepository.DeleteRecipeCategory(recipeCategoryId);
+            return Task.CompletedTask;
+        }
     }
 }

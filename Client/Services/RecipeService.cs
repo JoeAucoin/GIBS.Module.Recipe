@@ -166,5 +166,57 @@ namespace GIBS.Module.Recipe.Services
         {
             await DeleteAsync(CreateAuthorizationPolicyUrl($"{CreateApiUrl("Step")}/{stepId}", EntityNames.Module, moduleId));
         }
+
+        public async Task<List<GIBS.Module.Recipe.Models.Category>> GetCategoriesAsync(int moduleId)
+        {
+            return await GetJsonAsync<List<GIBS.Module.Recipe.Models.Category>>(CreateAuthorizationPolicyUrl($"{Apiurl}/category", EntityNames.Module, moduleId));
+        }
+
+        public async Task<GIBS.Module.Recipe.Models.Category> GetCategoryAsync(int categoryId, int moduleId)
+        {
+            return await GetJsonAsync<GIBS.Module.Recipe.Models.Category>(CreateAuthorizationPolicyUrl($"{Apiurl}/category/{categoryId}", EntityNames.Module, moduleId));
+        }
+
+        public async Task<GIBS.Module.Recipe.Models.Category> AddCategoryAsync(GIBS.Module.Recipe.Models.Category category)
+        {
+            return await PostJsonAsync<GIBS.Module.Recipe.Models.Category>(CreateAuthorizationPolicyUrl($"{Apiurl}/category", EntityNames.Module, category.ModuleId), category);
+        }
+
+        public async Task<GIBS.Module.Recipe.Models.Category> UpdateCategoryAsync(GIBS.Module.Recipe.Models.Category category)
+        {
+            return await PutJsonAsync<GIBS.Module.Recipe.Models.Category>(CreateAuthorizationPolicyUrl($"{Apiurl}/category/{category.CategoryId}", EntityNames.Module, category.ModuleId), category);
+        }
+
+        public async Task DeleteCategoryAsync(int categoryId, int moduleId)
+        {
+            await DeleteAsync(CreateAuthorizationPolicyUrl($"{Apiurl}/category/{categoryId}", EntityNames.Module, moduleId));
+        }
+
+        // RecipeCategory Methods
+        public async Task<List<RecipeCategory>> GetRecipeCategoriesAsync(int recipeId, int moduleId)
+        {
+            return await GetJsonAsync<List<RecipeCategory>>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipecategory/getbyrecipe/{recipeId}", EntityNames.Module, moduleId));
+        }
+
+        public async Task<RecipeCategory> GetRecipeCategoryAsync(int recipeCategoryId, int moduleId)
+        {
+            return await GetJsonAsync<RecipeCategory>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipecategory/{recipeCategoryId}", EntityNames.Module, moduleId));
+        }
+
+        public async Task<RecipeCategory> AddRecipeCategoryAsync(RecipeCategory recipeCategory)
+        {
+            return await PostJsonAsync<RecipeCategory>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipecategory", EntityNames.Module, recipeCategory.ModuleId), recipeCategory);
+        }
+
+        public async Task<RecipeCategory> UpdateRecipeCategoryAsync(RecipeCategory recipeCategory)
+        {
+            return await PutJsonAsync<RecipeCategory>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipecategory/{recipeCategory.RecipeCategoryId}", EntityNames.Module, recipeCategory.ModuleId), recipeCategory);
+        }
+
+        public async Task DeleteRecipeCategoryAsync(int recipeCategoryId, int moduleId)
+        {
+            await DeleteAsync(CreateAuthorizationPolicyUrl($"{Apiurl}/recipecategory/{recipeCategoryId}", EntityNames.Module, moduleId));
+        }
+
     }
 }

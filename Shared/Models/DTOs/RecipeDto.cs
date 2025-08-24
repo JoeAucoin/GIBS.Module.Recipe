@@ -1,15 +1,14 @@
-using Oqtane.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using GIBS.Module.Recipe.Models.DTOs;
 
-namespace GIBS.Module.Recipe.Models
+namespace GIBS.Module.Recipe.Models.DTOs
 {
-    [Table("GIBSRecipe")]
-    public class Recipe : IAuditable
+    public class RecipeDto
     {
-        [Key]
         public int RecipeId { get; set; }
         public int ModuleId { get; set; }
         public string Name { get; set; }
@@ -19,17 +18,15 @@ namespace GIBS.Module.Recipe.Models
         public string PrepTime { get; set; }
         public string CookTime { get; set; }
         public string ImageURL { get; set; }
-        public string Slug { get; set; }
         public bool IsFeatured { get; set; }
         public bool IsActive { get; set; }
+        // Add other simple properties as needed
         public string CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
         public string ModifiedBy { get; set; }
         public DateTime ModifiedOn { get; set; }
 
-        // Add this navigation property
-        public virtual ICollection<Step> Steps { get; set; }
-
-        public virtual ICollection<RecipeIngredient> RecipeIngredients { get; set; }
+        public List<StepDto> Steps { get; set; }
+        public List<RecipeIngredientDto> Ingredients { get; set; }
     }
 }

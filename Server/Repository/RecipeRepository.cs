@@ -225,5 +225,70 @@ namespace GIBS.Module.Recipe.Repository
             _db.Step.Remove(step);
             _db.SaveChanges();
         }
+
+        public IEnumerable<Category> GetCategories(int moduleId)
+        {
+            return _db.Category.Where(c => c.ModuleId == moduleId).OrderBy(c => c.Name);
+        }
+
+        public Category GetCategory(int categoryId)
+        {
+            return _db.Category.Find(categoryId);
+        }
+
+        public Category AddCategory(Category category)
+        {
+            _db.Category.Add(category);
+            _db.SaveChanges();
+            return category;
+        }
+
+        public Category UpdateCategory(Category category)
+        {
+            _db.Entry(category).State = EntityState.Modified;
+            _db.SaveChanges();
+            return category;
+        }
+
+        public void DeleteCategory(int categoryId)
+        {
+            Category category = _db.Category.Find(categoryId);
+            _db.Category.Remove(category);
+            _db.SaveChanges();
+        }
+
+        public IEnumerable<RecipeCategory> GetRecipeCategories(int recipeId)
+        {
+            return _db.RecipeCategory
+                .Include(rc => rc.Category)
+                .Include(rc => rc.Recipe)
+                .Where(rc => rc.RecipeId == recipeId);
+        }
+
+        public RecipeCategory GetRecipeCategory(int recipeCategoryId)
+        {
+            return _db.RecipeCategory.Find(recipeCategoryId);
+        }
+
+        public RecipeCategory AddRecipeCategory(RecipeCategory recipeCategory)
+        {
+            _db.RecipeCategory.Add(recipeCategory);
+            _db.SaveChanges();
+            return recipeCategory;
+        }
+
+        public RecipeCategory UpdateRecipeCategory(RecipeCategory recipeCategory)
+        {
+            _db.Entry(recipeCategory).State = EntityState.Modified;
+            _db.SaveChanges();
+            return recipeCategory;
+        }
+
+        public void DeleteRecipeCategory(int recipeCategoryId)
+        {
+            RecipeCategory recipeCategory = _db.RecipeCategory.Find(recipeCategoryId);
+            _db.RecipeCategory.Remove(recipeCategory);
+            _db.SaveChanges();
+        }
     }
 }

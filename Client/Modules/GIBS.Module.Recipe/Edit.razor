@@ -1,6 +1,8 @@
 @using Oqtane.Modules.Controls
 @using GIBS.Module.Recipe.Services
 @using GIBS.Module.Recipe.Models
+@using GIBS.Module.Recipe.Models.DTOs
+@using CategoryModel = GIBS.Module.Recipe.Models.Category
 
 @namespace GIBS.Module.Recipe
 @inherits ModuleBase
@@ -43,7 +45,7 @@
             </div>
         </div>
         <div class="row mb-1 align-items-center">
-            <Label Class="col-sm-3" For="instructions" HelpText="Enter the recipe instructions" ResourceKey="Instructions">Instructions: </Label>
+            <Label Class="col-sm-3" For="instructions" HelpText="Enter the recipe instructions" ResourceKey="Instructions">Preparation Instructions: </Label>
             <div class="col-sm-9">
                 <textarea id="instructions" class="form-control" @bind="@_instructions" rows="10"></textarea>
             </div>
@@ -81,6 +83,27 @@
             <Label Class="col-sm-3" For="isActive" HelpText="Check if this recipe is active." ResourceKey="Label.IsActive">@Localizer["Label.IsActive"]</Label>
             <div class="col-sm-9">
                 <input id="isActive" type="checkbox" class="form-check-input" @bind="_isActive" />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="categories" HelpText="Select categories for this recipe">Categories:</Label>
+            <div class="col-sm-9">
+                @if (_allCategories != null)
+                {
+                    @foreach (var category in _allCategories)
+                    {
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   id="cat_@category.CategoryId"
+                                   value="@category.CategoryId"
+                                   checked="@_selectedCategoryIds.Contains(category.CategoryId)"
+                                   @onchange="e => ToggleCategory(category.CategoryId, ((ChangeEventArgs)e).Value)" />
+                            <label class="form-check-label" for="cat_@category.CategoryId">@category.Name</label>
+                        </div>
+                    }
+                }
             </div>
         </div>
 
@@ -127,9 +150,9 @@
             <div class="card-body">
                 <div class="row mb-2">
                     <div class="col">
-                        <Label For="ingredient" HelpText="Select an ingredient">Ingredient:</Label>
+                        <Label For="ingredient" HelpText="Select an ingredient">Ingredient:</Label><button type="button" class="btn btn-sm btn-success float-end" @onclick="ShowAddNewIngredientDialog">+</button>
                         <select id="ingredient" class="form-select" @bind="@_newRecipeIngredient.IngredientId">
-                            <option value="0">&lt;Select Ingredient&gt;</option>
+                            <option value="0">- Select Ingredient -</option>        
                             @if (_allIngredients != null)
                             {
                                 @foreach (var ingredient in _allIngredients)
@@ -144,18 +167,19 @@
                         <input id="quantity" type="number" class="form-control" @bind="@_newRecipeIngredient.Quantity" />
                     </div>
                     <div class="col">
-                        <Label For="unit" HelpText="Select a unit">Unit:</Label>
-                        <select id="unit" class="form-select" @bind="@_newRecipeIngredient.UnitId">
-                            <option value="0">&lt;Select Unit&gt;</option>
-                            @if (_allUnits != null)
+                        <Label For="unit" HelpText="Select a unit">Unit:</Label> <button type="button" class="btn btn-sm btn-success float-end" @onclick="ShowAddNewUnitDialog">+</button>
+                       <select id="unit" class="form-select" @bind="@_newRecipeIngredient.UnitId">
+                        <option value="0">- Select Unit -</option>
+                        @if (_allUnits != null)
+                        {
+                            @foreach (var unit in _allUnits)
                             {
-                                @foreach (var unit in _allUnits)
-                                {
-                                    <option value="@unit.UnitId">@unit.Name</option>
-                                }
+                                <option value="@unit.UnitId">@unit.Name</option>
                             }
-                        </select>
+                        }
+                    </select>
                     </div>
+
                 </div>
                 <div class="row">
                     <div class="col">
@@ -249,6 +273,9 @@
                 }
             </div>
         </div>
+
+
+
         <hr />
     }
     @if (PageState.Action == "Edit")
@@ -256,6 +283,48 @@
         <AuditInfo CreatedBy="@_createdby" CreatedOn="@_createdon" ModifiedBy="@_modifiedby" ModifiedOn="@_modifiedon"></AuditInfo>
     }
 </form>
+
+@if (_showAddIngredientModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Ingredient</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddIngredientModal"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" placeholder="Ingredient Name" @bind="_newIngredientName" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="AddNewIngredient">Add</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAddIngredientModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showAddUnitModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Unit</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddUnitModal"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" placeholder="Unit Name" @bind="_newUnitName" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="AddNewUnit">Add</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseAddUnitModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
@@ -302,6 +371,18 @@
     private bool _isFeatured = false; // Assuming you want to keep the recipe not featured by default
 
     private string _imageURL;
+
+    // Modal state for adding new ingredient
+    private bool _showAddIngredientModal = false;
+    private string _newIngredientName;
+
+    // Modal state for adding new unit
+    private bool _showAddUnitModal = false;
+    private string _newUnitName;
+
+    private List<CategoryModel> _allCategories;
+    private List<RecipeCategory> _recipeCategories;
+    private HashSet<int> _selectedCategoryIds = new HashSet<int>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -352,6 +433,9 @@
                     await LoadSteps();
                     _newStep.Name = $"Step {(_steps?.Count ?? 0) + 1}:";
                 }
+
+                await LoadCategories();
+                await LoadRecipeCategories();
             }
         }
         catch (Exception ex)
@@ -359,6 +443,56 @@
             await logger.LogError(ex, "Error Loading Recipe {RecipeId} {Error}", _id, ex.Message);
             AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
         }
+    }
+
+
+    private async Task UpdateRecipeCategories()
+    {
+        // Remove all existing associations
+        if (_recipeCategories != null)
+        {
+            foreach (var rc in _recipeCategories)
+            {
+                await RecipeService.DeleteRecipeCategoryAsync(rc.RecipeCategoryId, ModuleState.ModuleId);
+            }
+        }
+
+        // Add selected associations
+        foreach (var categoryId in _selectedCategoryIds)
+        {
+            var newRc = new RecipeCategory
+            {
+                ModuleId = ModuleState.ModuleId,
+                RecipeId = _id,
+                CategoryId = categoryId
+            };
+            await RecipeService.AddRecipeCategoryAsync(newRc);
+        }
+
+        // Reload associations
+        await LoadRecipeCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        _allCategories = await RecipeService.GetCategoriesAsync(ModuleState.ModuleId);
+    }
+
+    private async Task LoadRecipeCategories()
+    {
+        _recipeCategories = await RecipeService.GetRecipeCategoriesAsync(_id, ModuleState.ModuleId);
+        _selectedCategoryIds = _recipeCategories != null
+            ? _recipeCategories.Select(rc => rc.CategoryId).ToHashSet()
+            : new HashSet<int>();
+    }
+
+    private void ToggleCategory(int categoryId, object value)
+    {
+        bool isChecked = value is bool b ? b : value?.ToString() == "true";
+        if (isChecked)
+            _selectedCategoryIds.Add(categoryId);
+        else
+            _selectedCategoryIds.Remove(categoryId);
     }
 
     private async Task LoadIngredients()
@@ -412,8 +546,30 @@
                     recipe.IsActive = _isActive;
                     recipe.IsFeatured = _isFeatured;
                     await RecipeService.UpdateRecipeAsync(recipe);
-                    await logger.LogInformation("Recipe Updated {Recipe}", recipe);
-                    NavigationManager.NavigateTo(NavigateUrl());
+
+                    // Update RecipeCategory associations
+                    await UpdateRecipeCategories();
+
+                    await logger.LogInformation("Recipe Updated {Recipe}", new RecipeDto
+                    {
+                        RecipeId = recipe.RecipeId,
+                        ModuleId = recipe.ModuleId,
+                        Name = recipe.Name,
+                        Description = recipe.Description,
+                        Instructions = recipe.Instructions,
+                        Servings = recipe.Servings,
+                        PrepTime = recipe.PrepTime,
+                        CookTime = recipe.CookTime,
+                        ImageURL = recipe.ImageURL,
+                        IsFeatured = recipe.IsFeatured,
+                        IsActive = recipe.IsActive,
+                        CreatedBy = recipe.CreatedBy,
+                        CreatedOn = recipe.CreatedOn,
+                        ModifiedBy = recipe.ModifiedBy,
+                        ModifiedOn = recipe.ModifiedOn
+                    });
+                    AddModuleMessage(Localizer["Success.Update"], MessageType.Success);
+                   // NavigationManager.NavigateTo(NavigateUrl());
                 }
             }
             else
@@ -432,6 +588,13 @@
     {
         try
         {
+            // Validate ingredient selection
+            if (_newRecipeIngredient.IngredientId == 0 || !_allIngredients.Any(i => i.IngredientId == _newRecipeIngredient.IngredientId))
+            {
+                AddModuleMessage("Please select a valid ingredient.", MessageType.Warning);
+                return;
+            }
+            
             if (_newRecipeIngredient.IngredientId != 0 && _newRecipeIngredient.UnitId != 0 && _newRecipeIngredient.Quantity > 0)
             {
                 if (_editingIngredient == null) // Add new
@@ -449,6 +612,9 @@
                     await RecipeService.UpdateRecipeIngredientAsync(_editingIngredient);
                 }
                 await LoadIngredients();
+                _newRecipeIngredient.IngredientId = 0; // Reset ingredient select
+                _newRecipeIngredient.UnitId = 0; // Reset unit select
+                StateHasChanged();
                 CancelEdit();
             }
             else
@@ -582,6 +748,104 @@
         }
     }
 
+    // private async Task OnIngredientChanged(ChangeEventArgs e)
+    // {
+    //     if (e.Value?.ToString() == "-1")
+    //     {
+    //         await ShowAddNewIngredientDialog();
+    //         _newRecipeIngredient.IngredientId = 0;
+    //     }
+    //     else
+    //     {
+    //         _newRecipeIngredient.IngredientId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0;
+    //     }
+    // }
+
+    // private async Task OnUnitChanged(ChangeEventArgs e)
+    // {
+    //     if (e.Value?.ToString() == "-1")
+    //     {
+    //         await ShowAddNewUnitDialog();
+    //         _newRecipeIngredient.UnitId = 0;
+    //     }
+    //     else
+    //     {
+    //         _newRecipeIngredient.UnitId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0;
+    //     }
+    // }
+
+    private Task ShowAddNewIngredientDialog()
+    {
+        _newIngredientName = string.Empty;
+        _showAddIngredientModal = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task ShowAddNewUnitDialog()
+    {
+        _newUnitName = string.Empty;
+        _showAddUnitModal = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task AddNewIngredient()
+    {
+        if (!string.IsNullOrWhiteSpace(_newIngredientName))
+        {
+            var ingredient = new Ingredient
+            {
+                Name = _newIngredientName,
+                ModuleId = ModuleState.ModuleId
+            };
+            var savedIngredient = await RecipeService.AddIngredientAsync(ingredient);
+            await LoadIngredients();
+            _showAddIngredientModal = false;
+            StateHasChanged();
+
+            if (savedIngredient != null)
+            {
+                _newRecipeIngredient.IngredientId = savedIngredient.IngredientId;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task AddNewUnit()
+    {
+        if (!string.IsNullOrWhiteSpace(_newUnitName))
+        {
+            var unit = new Unit
+            {
+                Name = _newUnitName,
+                ModuleId = ModuleState.ModuleId
+            };
+            var savedUnit = await RecipeService.AddUnitAsync(unit);
+            await LoadIngredients();
+            _showAddUnitModal = false;
+            StateHasChanged();
+
+            if (savedUnit != null)
+            {
+                _newRecipeIngredient.UnitId = savedUnit.UnitId;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void CloseAddIngredientModal()
+    {
+        _showAddIngredientModal = false;
+        StateHasChanged();
+    }
+
+    private void CloseAddUnitModal()
+    {
+        _showAddUnitModal = false;
+        StateHasChanged();
+    }
+
     private async Task SaveStep()
     {
         try
@@ -627,7 +891,6 @@
             ImageURL = step.ImageURL
         };
     }
-
 
     private void CancelEditStep()
     {

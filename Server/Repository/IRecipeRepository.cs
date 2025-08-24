@@ -39,5 +39,17 @@ namespace GIBS.Module.Recipe.Repository
         Step UpdateStep(Step step);
         void DeleteStep(int stepId);
 
+        IEnumerable<Category> GetCategories(int moduleId);
+        Category GetCategory(int categoryId);
+        Category AddCategory(Category category);
+        Category UpdateCategory(Category category);
+        void DeleteCategory(int categoryId);
+
+        // RecipeCategory Methods
+        IEnumerable<RecipeCategory> GetRecipeCategories(int recipeId);
+        RecipeCategory GetRecipeCategory(int recipeCategoryId);
+        RecipeCategory AddRecipeCategory(RecipeCategory recipeCategory);
+        RecipeCategory UpdateRecipeCategory(RecipeCategory recipeCategory);
+        void DeleteRecipeCategory(int recipeCategoryId);
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Oqtane.Infrastructure;
 using GIBS.Module.Recipe.Repository;
 using GIBS.Module.Recipe.Services;
+using System.Text.Json.Serialization;
 
 namespace GIBS.Module.Recipe.Startup
 {

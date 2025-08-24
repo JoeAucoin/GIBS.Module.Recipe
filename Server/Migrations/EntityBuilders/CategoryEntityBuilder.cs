@@ -24,8 +24,8 @@ namespace GIBS.Module.Recipe.Migrations.EntityBuilders
         {
             CategoryId = AddAutoIncrementColumn(table, "CategoryId");
             ModuleId = AddIntegerColumn(table, "ModuleId", false);
-            Name = AddStringColumn(table, "Name", 255, false);
-            Slug = AddStringColumn(table, "Slug", 250, true);
+            Name = AddStringColumn(table, "Name", 255, false, true);
+            Slug = AddStringColumn(table, "Slug", 250, true, true);
             AddAuditableColumns(table);
             return this;
         }

@@ -1,4 +1,4 @@
-@using GIBS.Module.Recipe.Services
+﻿@using GIBS.Module.Recipe.Services
 @using GIBS.Module.Recipe.Models
 
 @namespace GIBS.Module.Recipe
@@ -7,6 +7,9 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<Index> Localizer
 
+
+<h1>@Localizer["Title"]</h1>
+
 @if (_Recipes == null)
 {
     <p><em>Loading...</em></p>
@@ -14,7 +17,10 @@
 else
 {
     <div>
-        <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Manage" ResourceKey="Manage" />
+        <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add Recipe" ResourceKey="Add" />
+        <ActionLink Action="Ingredients" Security="SecurityAccessLevel.Edit" Text="Manage Ingredients" ResourceKey="Ingredient" />
+        <ActionLink Action="Units" Security="SecurityAccessLevel.Edit" Text="Manage Units" ResourceKey="Unit" />
+        <ActionLink Action="Category" Security="SecurityAccessLevel.Edit" Text="Manage Categories" ResourceKey="Category" />
     </div>
     <br />
     <br />
@@ -22,15 +28,15 @@ else
     {
         <Pager Items="@_Recipes">
             <Header>
-                <th style="width: 1px;">&nbsp;</th>
-                <th style="width: 1px;">&nbsp;</th>
-                <th>@Localizer["Name"]</th>
-                <th>@Localizer["IsFeatured"]</th>
-                <th>@Localizer["RecipeCategory"]</th>
+            <th style="width: 1px;">&nbsp;</th>
+            <th style="width: 1px;">&nbsp;</th>
+            <th>@Localizer["Name"]</th>
+            <th>@Localizer["IsFeatured"]</th>
+            <th>@Localizer["RecipeCategory"]</th>
             </Header>
             <Row>
-                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.RecipeId.ToString())" ResourceKey="Edit"  /></td>
-                <td><ActionDialog Header="Delete Recipe" Message="Are You Sure You Wish To Delete This Recipe?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.RecipeId.ToString()" /></td>
+                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.RecipeId.ToString())" ResourceKey="Edit" /></td>
+                <td><ActionDialog Header="Delete Recipe" Message="Are You Sure You Wish To Delete This Recipe?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete" Id="@context.RecipeId.ToString()" /></td>
                 <td>@context.Name</td>
                 <td>@(context.IsFeatured? Localizer["Yes"] : Localizer["No"])</td>
                 <td>
@@ -65,7 +71,6 @@ else
         new Resource { ResourceType = ResourceType.Script, Url = ModulePath() + "Module.js" }
     };
 
-   
     private List<Recipe> _Recipes;
     private List<RecipeCategory> _RecipeCategories;
     private Dictionary<int, List<RecipeCategory>> _RecipeCategoryLookup = new();

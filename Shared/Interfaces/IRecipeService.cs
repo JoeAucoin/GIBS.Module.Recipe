@@ -42,5 +42,18 @@ namespace GIBS.Module.Recipe.Services
 
         // Image Resize
         Task<Oqtane.Models.File> ResizeImageAsync(int fileId, int maxWidth, int maxHeight, int moduleId);
+
+        Task<List<Category>> GetCategoriesAsync(int moduleId);
+        Task<Category> GetCategoryAsync(int categoryId, int moduleId);
+        Task<Category> AddCategoryAsync(Category category);
+        Task<Category> UpdateCategoryAsync(Category category);
+        Task DeleteCategoryAsync(int categoryId, int moduleId);
+
+        // RecipeCategory Methods
+        Task<List<RecipeCategory>> GetRecipeCategoriesAsync(int recipeId, int moduleId);
+        Task<RecipeCategory> GetRecipeCategoryAsync(int recipeCategoryId, int moduleId);
+        Task<RecipeCategory> AddRecipeCategoryAsync(RecipeCategory recipeCategory);
+        Task<RecipeCategory> UpdateRecipeCategoryAsync(RecipeCategory recipeCategory);
+        Task DeleteRecipeCategoryAsync(int recipeCategoryId, int moduleId);
     }
 }

@@ -1,15 +1,17 @@
-using Microsoft.AspNetCore.Mvc;
+using GIBS.Module.Recipe.Models;
+using GIBS.Module.Recipe.Models.DTOs;
+using GIBS.Module.Recipe.Services;
 using Microsoft.AspNetCore.Authorization;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Http;
-using Oqtane.Shared;
+using Microsoft.AspNetCore.Mvc;
+using Oqtane.Controllers;
 using Oqtane.Enums;
 using Oqtane.Infrastructure;
-using GIBS.Module.Recipe.Services;
-using Oqtane.Controllers;
+using Oqtane.Shared;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using GIBS.Module.Recipe.Models;
+using System.Linq;
 
 namespace GIBS.Module.Recipe.Controllers
 {
@@ -26,11 +28,12 @@ namespace GIBS.Module.Recipe.Controllers
         // GET: api/<controller>?moduleid=x
         [HttpGet]
         [Authorize(Policy = PolicyNames.ViewModule)]
-        public async Task<IEnumerable<Models.Recipe>> Get(string moduleid)
+        public async Task<IEnumerable<RecipeDto>> Get(string moduleid)
         {
             if (int.TryParse(moduleid, out int ModuleId) && IsAuthorizedEntityId(EntityNames.Module, ModuleId))
             {
-                return await _recipeService.GetRecipesAsync(ModuleId);
+                var recipes = await _recipeService.GetRecipesAsync(ModuleId);
+                return recipes.Select(MapRecipeToDto).ToList();
             }
             else
             {
@@ -40,20 +43,37 @@ namespace GIBS.Module.Recipe.Controllers
             }
         }
 
-        // GET api/<controller>/5/1
+        //// GET api/<controller>/5/1
+        //[HttpGet("{id}/{moduleid}")]
+        //[Authorize(Policy = PolicyNames.ViewModule)]
+        //public async Task<Models.Recipe> Get(int id, int moduleid)
+        //{
+        //    if (IsAuthorizedEntityId(EntityNames.Module, moduleid))
+        //    {
+        //        return await _recipeService.GetRecipeAsync(id, moduleid);
+        //    }
+        //    else
+        //    {
+        //        _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Recipe Get Attempt {RecipeId} {ModuleId}", id, moduleid);
+        //        HttpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+        //        return null;
+        //    }
+        //}
+
         [HttpGet("{id}/{moduleid}")]
         [Authorize(Policy = PolicyNames.ViewModule)]
-        public async Task<Models.Recipe> Get(int id, int moduleid)
+        public async Task<ActionResult<RecipeDto>> Get(int id, int moduleid)
         {
             if (IsAuthorizedEntityId(EntityNames.Module, moduleid))
             {
-                return await _recipeService.GetRecipeAsync(id, moduleid);
+                var recipe = await _recipeService.GetRecipeAsync(id, moduleid);
+                if (recipe == null) return NotFound();
+                return Ok(MapRecipeToDto(recipe));
             }
             else
             {
                 _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Recipe Get Attempt {RecipeId} {ModuleId}", id, moduleid);
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                return null;
+                return Forbid();
             }
         }
 
@@ -77,17 +97,17 @@ namespace GIBS.Module.Recipe.Controllers
         // PUT api/<controller>/5
         [HttpPut("{id}")]
         [Authorize(Policy = PolicyNames.EditModule)]
-        public async Task<Models.Recipe> Put(int id, [FromBody] Models.Recipe recipe)
+        public async Task<ActionResult<RecipeDto>> Put(int id, [FromBody] Models.Recipe recipe)
         {
             if (ModelState.IsValid && recipe.RecipeId == id && IsAuthorizedEntityId(EntityNames.Module, recipe.ModuleId))
             {
-                return await _recipeService.UpdateRecipeAsync(recipe);
+                var updatedRecipe = await _recipeService.UpdateRecipeAsync(recipe);
+                return Ok(MapRecipeToDto(updatedRecipe));
             }
             else
             {
                 _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Recipe Put Attempt {Recipe}", recipe);
-                HttpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                return null;
+                return Forbid();
             }
         }
 
@@ -250,9 +270,10 @@ namespace GIBS.Module.Recipe.Controllers
         // GET: api/<controller>/step/getbyrecipe/1
         [HttpGet("step/getbyrecipe/{recipeId}")]
         [Authorize(Policy = PolicyNames.ViewModule)]
-        public async Task<IEnumerable<Step>> GetSteps(int recipeId)
+        public async Task<IEnumerable<StepDto>> GetSteps(int recipeId)
         {
-            return await _recipeService.GetStepsAsync(recipeId, AuthEntityId(EntityNames.Module));
+            var steps = await _recipeService.GetStepsAsync(recipeId, AuthEntityId(EntityNames.Module));
+            return steps.Select(MapStepToDto).ToList();
         }
 
         // GET: api/<controller>/step/1
@@ -320,5 +341,285 @@ namespace GIBS.Module.Recipe.Controllers
                 return null;
             }
         }
+
+        //private RecipeDto MapRecipeToDto(GIBS.Module.Recipe.Models.Recipe recipe)
+        //{
+        //    if (recipe == null) return null;
+        //    return new RecipeDto
+        //    {
+        //        RecipeId = recipe.RecipeId,
+        //        ModuleId = recipe.ModuleId,
+        //        Name = recipe.Name,
+        //        Description = recipe.Description,
+        //        Instructions = recipe.Instructions,
+        //        Servings = recipe.Servings,
+        //        PrepTime = recipe.PrepTime,
+        //        CookTime = recipe.CookTime,
+        //        ImageURL = recipe.ImageURL,
+        //        IsFeatured = recipe.IsFeatured,
+        //        IsActive = recipe.IsActive,
+        //        CreatedBy = recipe.CreatedBy,
+        //        CreatedOn = recipe.CreatedOn,
+        //        ModifiedBy = recipe.ModifiedBy,
+        //        ModifiedOn = recipe.ModifiedOn
+        //    };
+        //}
+
+        // Mapping methods
+
+        //private RecipeDto MapRecipeToDto(GIBS.Module.Recipe.Models.Recipe recipe)
+        //{
+        //    if (recipe == null) return null;
+        //    return new RecipeDto
+        //    {
+        //        RecipeId = recipe.RecipeId,
+        //        ModuleId = recipe.ModuleId,
+        //        Name = recipe.Name,
+        //        Description = recipe.Description,
+        //        Instructions = recipe.Instructions,
+        //        Servings = recipe.Servings,
+        //        PrepTime = recipe.PrepTime,
+        //        CookTime = recipe.CookTime,
+        //        ImageURL = recipe.ImageURL,
+        //        IsFeatured = recipe.IsFeatured,
+        //        IsActive = recipe.IsActive,
+        //        CreatedBy = recipe.CreatedBy,
+        //        CreatedOn = recipe.CreatedOn,
+        //        ModifiedBy = recipe.ModifiedBy,
+        //        ModifiedOn = recipe.ModifiedOn,
+        //        Steps = recipe.Steps?.Select(MapStepToDto).ToList(),
+        //        Ingredients = recipe.RecipeIngredients?.Select(MapRecipeIngredientToDto).ToList()
+        //    };
+        //}
+
+        private RecipeDto MapRecipeToDto(GIBS.Module.Recipe.Models.Recipe recipe)
+        {
+            if (recipe == null) return null;
+            return new RecipeDto
+            {
+                RecipeId = recipe.RecipeId,
+                ModuleId = recipe.ModuleId,
+                Name = recipe.Name,
+                Description = recipe.Description,
+                Instructions = recipe.Instructions,
+                Servings = recipe.Servings,
+                PrepTime = recipe.PrepTime,
+                CookTime = recipe.CookTime,
+                ImageURL = recipe.ImageURL,
+                IsFeatured = recipe.IsFeatured,
+                IsActive = recipe.IsActive,
+                CreatedBy = recipe.CreatedBy,
+                CreatedOn = recipe.CreatedOn,
+                ModifiedBy = recipe.ModifiedBy,
+                ModifiedOn = recipe.ModifiedOn,
+                Steps = recipe.Steps?.Select(s => new StepDto
+                {
+                    StepId = s.StepId,
+                    ModuleId = s.ModuleId,
+                    RecipeId = s.RecipeId,
+                    Name = s.Name,
+                    Instructions = s.Instructions,
+                    ImageURL = s.ImageURL,
+                    CreatedBy = s.CreatedBy,
+                    CreatedOn = s.CreatedOn
+                }).ToList(),
+                Ingredients = recipe.RecipeIngredients?.Select(ri => new RecipeIngredientDto
+                {
+                    RecipeIngredientId = ri.RecipeIngredientId,
+                    ModuleId = ri.ModuleId,
+                    RecipeId = ri.RecipeId,
+                    IngredientId = ri.IngredientId,
+                    Quantity = ri.Quantity,
+                    UnitId = ri.UnitId,
+                    Notes = ri.Notes,
+                    IngredientName = ri.Ingredient?.Name,
+                    UnitName = ri.Unit?.Name,
+                    CreatedBy = ri.CreatedBy,
+                    CreatedOn = ri.CreatedOn,
+                    ModifiedBy = ri.ModifiedBy,
+                    ModifiedOn = ri.ModifiedOn
+                }).ToList()
+            };
+        }
+
+        private RecipeDto MapDtoToRecipe(RecipeDto dto)
+        {
+            if (dto == null) return null;
+            return new RecipeDto
+            {
+                RecipeId = dto.RecipeId,
+                ModuleId = dto.ModuleId,
+                Name = dto.Name,
+                Description = dto.Description,
+                Instructions = dto.Instructions,
+                Servings = dto.Servings,
+                PrepTime = dto.PrepTime,
+                CookTime = dto.CookTime,
+                ImageURL = dto.ImageURL,
+                IsFeatured = dto.IsFeatured,
+                IsActive = dto.IsActive,
+                CreatedBy = dto.CreatedBy,
+                CreatedOn = dto.CreatedOn,
+                ModifiedBy = dto.ModifiedBy,
+                ModifiedOn = dto.ModifiedOn
+                // Steps and Ingredients are handled separately
+            };
+        }
+
+        private RecipeIngredientDto MapRecipeIngredientToDto(RecipeIngredient ri)
+        {
+            if (ri == null) return null;
+            return new RecipeIngredientDto
+            {
+                RecipeIngredientId = ri.RecipeIngredientId,
+                ModuleId = ri.ModuleId,
+                RecipeId = ri.RecipeId,
+                IngredientId = ri.IngredientId,
+                Quantity = ri.Quantity,
+                UnitId = ri.UnitId,
+                Notes = ri.Notes,
+                IngredientName = ri.Ingredient?.Name,
+                UnitName = ri.Unit?.Name,
+                CreatedBy = ri.CreatedBy,
+                CreatedOn = ri.CreatedOn,
+                ModifiedBy = ri.ModifiedBy,
+                ModifiedOn = ri.ModifiedOn
+            };
+        }
+
+        private RecipeIngredient MapDtoToRecipeIngredient(RecipeIngredientDto dto)
+        {
+            if (dto == null) return null;
+            return new RecipeIngredient
+            {
+                RecipeIngredientId = dto.RecipeIngredientId,
+                ModuleId = dto.ModuleId,
+                RecipeId = dto.RecipeId,
+                IngredientId = dto.IngredientId,
+                Quantity = dto.Quantity,
+                UnitId = dto.UnitId,
+                Notes = dto.Notes,
+                CreatedBy = dto.CreatedBy,
+                CreatedOn = dto.CreatedOn,
+                ModifiedBy = dto.ModifiedBy,
+                ModifiedOn = dto.ModifiedOn
+            };
+        }
+
+        private StepDto MapStepToDto(Step step)
+        {
+            if (step == null) return null;
+            return new StepDto
+            {
+                StepId = step.StepId,
+                ModuleId = step.ModuleId,
+                RecipeId = step.RecipeId,
+                Name = step.Name,
+                Instructions = step.Instructions,
+                ImageURL = step.ImageURL,
+                CreatedBy = step.CreatedBy,
+                CreatedOn = step.CreatedOn
+            };
+        }
+
+        private Step MapDtoToStep(StepDto dto)
+        {
+            if (dto == null) return null;
+            return new Step
+            {
+                StepId = dto.StepId,
+                ModuleId = dto.ModuleId,
+                RecipeId = dto.RecipeId,
+                Name = dto.Name,
+                Instructions = dto.Instructions,
+                ImageURL = dto.ImageURL,
+                CreatedBy = dto.CreatedBy,
+                CreatedOn = dto.CreatedOn
+            };
+        }
+
+        [HttpGet("category")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<IEnumerable<Category>> GetCategories(string moduleid)
+        {
+            if (int.TryParse(moduleid, out int ModuleId) && IsAuthorizedEntityId(EntityNames.Module, ModuleId))
+            {
+                return await _recipeService.GetCategoriesAsync(ModuleId);
+            }
+            return null;
+        }
+
+        [HttpPost("category")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<Category> PostCategory([FromBody] Category category)
+        {
+            if (ModelState.IsValid && IsAuthorizedEntityId(EntityNames.Module, category.ModuleId))
+            {
+                return await _recipeService.AddCategoryAsync(category);
+            }
+            return null;
+        }
+
+        [HttpPut("category/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<Category> PutCategory(int id, [FromBody] Category category)
+        {
+            if (ModelState.IsValid && category.CategoryId == id && IsAuthorizedEntityId(EntityNames.Module, category.ModuleId))
+            {
+                return await _recipeService.UpdateCategoryAsync(category);
+            }
+            return null;
+        }
+
+        [HttpDelete("category/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task DeleteCategory(int id)
+        {
+            await _recipeService.DeleteCategoryAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
+        [HttpGet("recipecategory/getbyrecipe/{recipeId}")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<IEnumerable<RecipeCategory>> GetRecipeCategories(int recipeId)
+        {
+            return await _recipeService.GetRecipeCategoriesAsync(recipeId, AuthEntityId(EntityNames.Module));
+        }
+
+        [HttpGet("recipecategory/{id}")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<RecipeCategory> GetRecipeCategory(int id)
+        {
+            return await _recipeService.GetRecipeCategoryAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
+        [HttpPost("recipecategory")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<RecipeCategory> PostRecipeCategory([FromBody] RecipeCategory recipeCategory)
+        {
+            if (ModelState.IsValid && IsAuthorizedEntityId(EntityNames.Module, recipeCategory.ModuleId))
+            {
+                return await _recipeService.AddRecipeCategoryAsync(recipeCategory);
+            }
+            return null;
+        }
+
+        [HttpPut("recipecategory/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<RecipeCategory> PutRecipeCategory(int id, [FromBody] RecipeCategory recipeCategory)
+        {
+            if (ModelState.IsValid && recipeCategory.RecipeCategoryId == id && IsAuthorizedEntityId(EntityNames.Module, recipeCategory.ModuleId))
+            {
+                return await _recipeService.UpdateRecipeCategoryAsync(recipeCategory);
+            }
+            return null;
+        }
+
+        [HttpDelete("recipecategory/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task DeleteRecipeCategory(int id)
+        {
+            await _recipeService.DeleteRecipeCategoryAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
     }
 }

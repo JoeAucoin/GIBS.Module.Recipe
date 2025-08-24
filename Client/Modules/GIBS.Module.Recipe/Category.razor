@@ -1,0 +1,147 @@
+﻿@using GIBS.Module.Recipe.Services
+@using GIBS.Module.Recipe.Models
+@using CategoryModel = GIBS.Module.Recipe.Models.Category
+
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject IRecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Category> Localizer
+
+
+
+<h3>Categories</h3>
+
+<button class="btn btn-success mb-2" @onclick="ShowAddCategory">Add Category</button>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (_categories != null)
+        {
+            @foreach (var category in _categories)
+            {
+                <tr>
+                    <td>@category.Name</td>
+                    <td>@category.Slug</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditCategory(category)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteCategory(category.CategoryId)">Delete</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@if (_showEditModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(_editingCategory?.CategoryId == 0 ? "Add Category" : "Edit Category")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control mb-2" placeholder="Name" @bind="_editingCategory.Name" @oninput="OnNameInput" required />
+                    <input class="form-control mb-2" placeholder="Slug" @bind="_editingCategory.Slug" />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @onclick="SaveCategory">Save</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+
+    private List<CategoryModel> _categories;
+    private CategoryModel _editingCategory = new CategoryModel();
+    private bool _showEditModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        // Replace with your module id as needed
+        _categories = await RecipeService.GetCategoriesAsync(ModuleState.ModuleId);
+    }
+
+    private void ShowAddCategory()
+    {
+        _editingCategory = new CategoryModel { CategoryId = 0, ModuleId = ModuleState.ModuleId };
+        _showEditModal = true;
+    }
+
+    private void OnNameInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        _editingCategory.Name = value;
+        _editingCategory.Slug = GenerateSlug(value);
+    }
+
+    private string GenerateSlug(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return "";
+        // Convert to lower, replace spaces with '-', allow a-z and 0-9, remove other chars
+        var slug = new string(input.ToLower().Select(c =>
+            (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ? c :
+            (c == ' ' ? '-' : '\0')).Where(c => c != '\0').ToArray());
+        // Replace multiple dashes with single dash
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, "-+", "-");
+        // Trim dashes
+        slug = slug.Trim('-');
+        return slug;
+    }
+
+
+    private void EditCategory(CategoryModel category)
+    {
+        _editingCategory = new CategoryModel
+        {
+            CategoryId = category.CategoryId,
+            ModuleId = category.ModuleId,
+            Name = category.Name,
+            Slug = category.Slug
+        };
+        _showEditModal = true;
+    }
+
+    private async Task SaveCategory()
+    {
+        if (string.IsNullOrWhiteSpace(_editingCategory.Name))
+            return;
+
+        if (_editingCategory.CategoryId == 0)
+            await RecipeService.AddCategoryAsync(_editingCategory);
+        else
+            await RecipeService.UpdateCategoryAsync(_editingCategory);
+
+        _showEditModal = false;
+        await LoadCategories();
+        StateHasChanged();
+    }
+
+    private async Task DeleteCategory(int categoryId)
+    {
+        await RecipeService.DeleteCategoryAsync(categoryId, ModuleState.ModuleId);
+        await LoadCategories();
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+    }
+}
