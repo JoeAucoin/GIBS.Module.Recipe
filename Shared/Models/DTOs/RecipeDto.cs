@@ -17,6 +17,7 @@ namespace GIBS.Module.Recipe.Models.DTOs
         public int Servings { get; set; }
         public string PrepTime { get; set; }
         public string CookTime { get; set; }
+        public string Slug { get; set; }
         public string ImageURL { get; set; }
         public bool IsFeatured { get; set; }
         public bool IsActive { get; set; }

@@ -1,1 +1,139 @@
 /* Module Custom Styles */
+
+/* Container and layout */
+#gibs-recipe {
+    margin-top: 20px;
+}
+
+.category-nav {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+    .category-nav h4 {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        font-weight: 600;
+        color: #333;
+    }
+
+.category-link {
+    margin-bottom: 8px;
+}
+
+.categoryLinks {
+    display: block;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 6px 0;
+    transition: color 0.2s;
+}
+
+    .categoryLinks:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+
+.recipe-details-card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 30px 25px;
+    margin-bottom: 30px;
+}
+
+.recipe-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: #2c3e50;
+}
+
+.recipe-details-image {
+    max-width: 320px;
+    max-height: 260px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    margin-bottom: 15px;
+    margin-left: 15px;
+}
+
+.featured-recipe-image {
+    max-width: 180px;
+    max-height: 140px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: none;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.card-text {
+    font-size: 0.98rem;
+    color: #555;
+}
+
+.recipe-listing-row {
+    padding: 18px 0;
+    border-bottom: 1px solid #eaeaea;
+    align-items: center;
+}
+
+.recipe-listing-alt {
+    background: #f6f8fa;
+}
+
+.recipe-listing-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.recipe-listing-description {
+    font-size: 0.98rem;
+    color: #555;
+}
+
+.recipe-listing-img img {
+    max-width: 120px;
+    max-height: 90px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.recipe-listing-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-outline-secondary {
+    margin-right: 6px;
+}
+
+.alert-info, .alert-warning {
+    margin-top: 20px;
+    font-size: 1.05rem;
+}
+
+@media (max-width: 991px) {
+    .col-lg-3 {
+        padding-top: 20px !important;
+    }
+
+    .category-nav {
+        padding: 15px 8px;
+    }
+}

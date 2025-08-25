@@ -147,4 +147,7 @@
   <data name="Manage.Text" xml:space="preserve">
     <value>Manage</value>
   </data>
+  <data name="Steps" xml:space="preserve">
+    <value>Preparation</value>
+  </data>
 </root>

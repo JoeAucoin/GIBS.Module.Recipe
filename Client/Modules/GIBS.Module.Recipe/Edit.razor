@@ -1,4 +1,7 @@
 @using Oqtane.Modules.Controls
+@using Oqtane.Models
+@using Oqtane.Security
+@using Oqtane.UI
 @using GIBS.Module.Recipe.Services
 @using GIBS.Module.Recipe.Models
 @using GIBS.Module.Recipe.Models.DTOs
@@ -17,7 +20,7 @@
         <div class="row mb-1 align-items-center">
             <Label Class="col-sm-3" For="name" HelpText="Enter a name for the recipe" ResourceKey="Name">Name: </Label>
             <div class="col-sm-9">
-                <input id="name" class="form-control" @bind="@_name" required />
+                <input id="name" class="form-control" @bind="@_name" @oninput="OnNameInput" required />
             </div>
         </div>
         <div class="row mb-1 align-items-center">
@@ -73,6 +76,13 @@
             </div>
         </div>
         <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="slug" HelpText="Auto-generated from recipe name." ResourceKey="Label.Slug">@Localizer["Label.Slug"]</Label>
+            <div class="col-sm-9">
+                <input id="slug" class="form-control" @bind="_slug" />
+            </div>
+        </div>
+
+        <div class="row mb-1 align-items-center">
             <Label Class="col-sm-3" For="isFeatured" HelpText="Check if this is a featured item." ResourceKey="Label.IsFeatured">@Localizer["Label.IsFeatured"]</Label>
             <div class="col-sm-9">
                 <input id="isFeatured" type="checkbox" class="form-check-input" @bind="_isFeatured" />
@@ -109,171 +119,177 @@
 
     </div>
     <button type="button" class="btn btn-success" @onclick="Save">@Localizer["Save"]</button>
-    <NavLink class="btn btn-secondary" href="@NavigateUrl()">@Localizer["Cancel"]</NavLink>
+    <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Cancel" ResourceKey="Cancel" />
     <br /><br />
     @if (PageState.Action == "Edit")
     {
-        <hr />
-        <h5>Ingredients</h5>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Ingredient</th>
-                    <th>Quantity</th>
-                    <th>Unit</th>
-                    <th>Notes</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (_recipeIngredients != null)
-                {
-                    @foreach (var ri in _recipeIngredients)
-                    {
-                        <tr>
-                            <td>@ri.Ingredient.Name</td>
-                            <td>@ri.Quantity</td>
-                            <td>@ri.Unit.Name</td>
-                            <td>@ri.Notes</td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditIngredient(ri)">Edit</button>
-                                <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteIngredient(ri.RecipeIngredientId)">Delete</button>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
 
-        <div class="card mt-3">
-            <div class="card-header">@(_editingIngredient == null ? "Add New Ingredient" : "Edit Ingredient")</div>
-            <div class="card-body">
-                <div class="row mb-2">
-                    <div class="col">
-                        <Label For="ingredient" HelpText="Select an ingredient">Ingredient:</Label><button type="button" class="btn btn-sm btn-success float-end" @onclick="ShowAddNewIngredientDialog">+</button>
-                        <select id="ingredient" class="form-select" @bind="@_newRecipeIngredient.IngredientId">
-                            <option value="0">- Select Ingredient -</option>        
-                            @if (_allIngredients != null)
-                            {
-                                @foreach (var ingredient in _allIngredients)
+        <TabStrip>
+            <TabPanel Name="Ingredients">
+                <div class="card mt-3">
+                    <div class="card-header">@(_editingIngredient == null ? "Add New Ingredient" : "Edit Ingredient")</div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col">
+                                <Label For="ingredient" HelpText="Select an ingredient">Ingredient:</Label><button type="button" class="btn btn-sm btn-success float-end" @onclick="ShowAddNewIngredientDialog">+</button>
+                                <select id="ingredient" class="form-select" @bind="@_newRecipeIngredient.IngredientId">
+                                    <option value="0">- Select Ingredient -</option>        
+                                    @if (_allIngredients != null)
+                                    {
+                                        @foreach (var ingredient in _allIngredients)
+                                        {
+                                            <option value="@ingredient.IngredientId">@ingredient.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col">
+                                <Label For="quantity" HelpText="Enter quantity">Quantity:</Label>
+                                <input id="quantity" type="number" class="form-control" @bind="@_newRecipeIngredient.Quantity" />
+                            </div>
+                            <div class="col">
+                                <Label For="unit" HelpText="Select a unit">Unit:</Label> <button type="button" class="btn btn-sm btn-success float-end" @onclick="ShowAddNewUnitDialog">+</button>
+                               <select id="unit" class="form-select" @bind="@_newRecipeIngredient.UnitId">
+                                <option value="0">- Select Unit -</option>
+                                @if (_allUnits != null)
                                 {
-                                    <option value="@ingredient.IngredientId">@ingredient.Name</option>
+                                    @foreach (var unit in _allUnits)
+                                    {
+                                        <option value="@unit.UnitId">@unit.Name</option>
+                                    }
                                 }
-                            }
-                        </select>
+                            </select>
+                            </div>
+
+                        </div>
+                        <div class="row">
+                            <div class="col">
+                                <Label For="notes" HelpText="Enter any notes">Notes:</Label>
+                                <input id="notes" class="form-control" @bind="@_newRecipeIngredient.Notes" />
+                            </div>
+                        </div>
                     </div>
-                    <div class="col">
-                        <Label For="quantity" HelpText="Enter quantity">Quantity:</Label>
-                        <input id="quantity" type="number" class="form-control" @bind="@_newRecipeIngredient.Quantity" />
-                    </div>
-                    <div class="col">
-                        <Label For="unit" HelpText="Select a unit">Unit:</Label> <button type="button" class="btn btn-sm btn-success float-end" @onclick="ShowAddNewUnitDialog">+</button>
-                       <select id="unit" class="form-select" @bind="@_newRecipeIngredient.UnitId">
-                        <option value="0">- Select Unit -</option>
-                        @if (_allUnits != null)
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-success" @onclick="SaveIngredient">@(_editingIngredient == null ? "Add" : "Update")</button>
+                        @if (_editingIngredient != null)
                         {
-                            @foreach (var unit in _allUnits)
-                            {
-                                <option value="@unit.UnitId">@unit.Name</option>
-                            }
-                        }
-                    </select>
-                    </div>
-
-                </div>
-                <div class="row">
-                    <div class="col">
-                        <Label For="notes" HelpText="Enter any notes">Notes:</Label>
-                        <input id="notes" class="form-control" @bind="@_newRecipeIngredient.Notes" />
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer">
-                <button type="button" class="btn btn-success" @onclick="SaveIngredient">@(_editingIngredient == null ? "Add" : "Update")</button>
-                @if (_editingIngredient != null)
-                {
-                    <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
-                }
-            </div>
-        </div>
-        <hr />
-        <h5>Steps</h5>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Instructions</th>
-                    <th>Image</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (_steps != null)
-                {
-                    @foreach (var step in _steps.OrderBy(s => s.Name))
-                    {
-                        <tr>
-                            <td style="width:70px;">@step.Name</td>
-                            <td>@step.Instructions</td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(step.ImageURL))
-                                {
-                                    <img src="@step.ImageURL" style="max-width: 100px; max-height: 75px;" />
-                                }
-                            </td>
-                            <td style="width:130px;">
-                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditStep(step)">Edit</button>
-                                <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteStep(step.StepId)">Delete</button>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-
-        <div class="card mt-3">
-            <div class="card-header">@(_editingStep == null ? "Add New Step" : "Edit Step")</div>
-            <div class="card-body">
-                <div class="row mb-2">
-                    <div class="col-2">
-                        <Label For="stepName" HelpText="The name of the step (auto-generated)">Name:</Label>
-                        <input id="stepName" class="form-control" @bind="@_newStep.Name" />
-                    </div>
-                    <div class="col-10">
-                        <Label For="stepInstructions" HelpText="Enter the instructions for the step">Instructions:</Label>
-                        <textarea id="stepInstructions" class="form-control" @bind="@_newStep.Instructions" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="row mb-1 align-items-center">
-                    <Label Class="col-sm-2" For="stepUpload" HelpText="Upload an image for the step">Image: </Label>
-                    <div class="col-sm-10">
-                        <FileManager UploadMultiple="false" Filter="jpg,png,gif,jpeg"
-                                     FolderId="@_folderId"
-                                     ShowSuccess="true" ShowFolders="false" ShowFiles="false" ShowImage="true"
-                                     OnUpload="@HandleStepFileUpload" />
-                    </div>
-                </div>
-                <div class="row mb-1 align-items-center">
-                    <Label Class="col-sm-2" For="stepImageURL" HelpText="Upload or enter an image URL.">Image URL:</Label>
-                    <div class="col-sm-10">
-                        <input id="stepImageURL" class="form-control mb-1" @bind="@_newStep.ImageURL" placeholder="Paste or enter image URL" />
-
-                        @if (!string.IsNullOrEmpty(_newStep.ImageURL))
-                        {
-                            <img src="@_newStep.ImageURL" alt="Image preview" style="max-width: 280px; max-height: 200px; margin-top: 5px; margin-bottom: 10px;" />
+                            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
                         }
                     </div>
                 </div>
-            </div>
-            <div class="card-footer">
-                <button type="button" class="btn btn-success" @onclick="SaveStep">@(_editingStep == null ? "Add" : "Update")</button>
-                @if (_editingStep != null)
-                {
-                    <button type="button" class="btn btn-secondary" @onclick="CancelEditStep">Cancel</button>
-                }
-            </div>
-        </div>
 
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ingredient</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Notes</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_recipeIngredients != null)
+                        {
+                            @foreach (var ri in _recipeIngredients)
+                            {
+                                <tr>
+                                    <td>@ri.Ingredient.Name</td>
+                                    <td>@ri.Quantity</td>
+                                    <td>@ri.Unit.Name</td>
+                                    <td>@ri.Notes</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditIngredient(ri)">Edit</button>
+                                        <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteIngredient(ri.RecipeIngredientId)">Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+
+            </TabPanel>
+            <TabPanel Name="Steps">
+                <div class="card mt-3">
+                    <div class="card-header">@(_editingStep == null ? "Add New Step" : "Edit Step")</div>
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-2">
+                                <Label For="stepName" HelpText="The name of the step (auto-generated)">Name:</Label>
+                                <input id="stepName" class="form-control" @bind="@_newStep.Name" />
+                            </div>
+                            <div class="col-10">
+                                <Label For="stepInstructions" HelpText="Enter the instructions for the step">Instructions:</Label>
+                                <textarea id="stepInstructions" class="form-control" @bind="@_newStep.Instructions" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="row mb-1 align-items-center">
+                            <Label Class="col-sm-2" For="stepUpload" HelpText="Upload an image for the step">Image: </Label>
+                            <div class="col-sm-10">
+                                <FileManager UploadMultiple="false" Filter="jpg,png,gif,jpeg"
+                                             FolderId="@_folderId"
+                                             ShowSuccess="true" ShowFolders="false" ShowFiles="false" ShowImage="true"
+                                             OnUpload="@HandleStepFileUpload" />
+                            </div>
+                        </div>
+                        <div class="row mb-1 align-items-center">
+                            <Label Class="col-sm-2" For="stepImageURL" HelpText="Upload or enter an image URL.">Image URL:</Label>
+                            <div class="col-sm-10">
+                                <input id="stepImageURL" class="form-control mb-1" @bind="@_newStep.ImageURL" placeholder="Paste or enter image URL" />
+
+                                @if (!string.IsNullOrEmpty(_newStep.ImageURL))
+                                {
+                                    <img src="@_newStep.ImageURL" alt="Image preview" style="max-width: 280px; max-height: 200px; margin-top: 5px; margin-bottom: 10px;" />
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="button" class="btn btn-success" @onclick="SaveStep">@(_editingStep == null ? "Add" : "Update")</button>
+                        @if (_editingStep != null)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="CancelEditStep">Cancel</button>
+                        }
+                    </div>
+                </div>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Instructions</th>
+                            <th>Image</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_steps != null)
+                        {
+                            @foreach (var step in _steps.OrderBy(s => s.Name))
+                            {
+                                <tr>
+                                    <td style="width:84px;">@step.Name</td>
+                                    <td>@step.Instructions</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(step.ImageURL))
+                                        {
+                                            <img src="@step.ImageURL" style="max-width: 100px; max-height: 75px;" />
+                                        }
+                                    </td>
+                                    <td style="width:130px;">
+                                        <button type="button" class="btn btn-sm btn-primary" @onclick="() => EditStep(step)">Edit</button>
+                                        <button type="button" class="btn btn-sm btn-danger" @onclick="() => DeleteStep(step.StepId)">Delete</button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+
+            </TabPanel>
+        </TabStrip>
+
+
+       
 
 
         <hr />
@@ -327,6 +343,7 @@
 }
 
 @code {
+
     public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
 
     public override string Actions => "Add,Edit";
@@ -348,6 +365,8 @@
     private int _servings;
     private string _prepTime;
     private string _cookTime;
+
+    public string _slug;
 
     private List<RecipeIngredient> _recipeIngredients;
     private List<Ingredient> _allIngredients;
@@ -408,6 +427,8 @@
                 _imageMaxHeight = 600;
             }
 
+            await LoadCategories();
+
             if (PageState.Action == "Edit")
             {
                 _id = Int32.Parse(PageState.QueryString["id"]);
@@ -421,6 +442,7 @@
                     _servings = recipe.Servings;
                     _prepTime = recipe.PrepTime;
                     _cookTime = recipe.CookTime;
+                    _slug = recipe.Slug;
                     _isFeatured = recipe.IsFeatured;
                     _isActive = recipe.IsActive;
 
@@ -431,10 +453,9 @@
 
                     await LoadIngredients();
                     await LoadSteps();
-                    _newStep.Name = $"Step {(_steps?.Count ?? 0) + 1}:";
+                    _newStep.Name = $"Step {((_steps?.Count ?? 0) + 1).ToString("D2")}:";
                 }
-
-                await LoadCategories();
+          
                 await LoadRecipeCategories();
             }
         }
@@ -525,6 +546,7 @@
                     recipe.Servings = _servings;
                     recipe.PrepTime = _prepTime;
                     recipe.CookTime = _cookTime;
+                    recipe.Slug = _slug;
                     recipe.ImageURL = _imageURL;
                     recipe.IsActive = _isActive;
                     recipe.IsFeatured = _isFeatured;
@@ -542,6 +564,7 @@
                     recipe.Servings = _servings;
                     recipe.PrepTime = _prepTime;
                     recipe.CookTime = _cookTime;
+                    recipe.Slug = _slug;
                     recipe.ImageURL = _imageURL;
                     recipe.IsActive = _isActive;
                     recipe.IsFeatured = _isFeatured;
@@ -560,6 +583,7 @@
                         Servings = recipe.Servings,
                         PrepTime = recipe.PrepTime,
                         CookTime = recipe.CookTime,
+                        Slug = recipe.Slug,
                         ImageURL = recipe.ImageURL,
                         IsFeatured = recipe.IsFeatured,
                         IsActive = recipe.IsActive,
@@ -569,6 +593,7 @@
                         ModifiedOn = recipe.ModifiedOn
                     });
                     AddModuleMessage(Localizer["Success.Update"], MessageType.Success);
+                    validated = false;
                    // NavigationManager.NavigateTo(NavigateUrl());
                 }
             }
@@ -685,6 +710,27 @@
         }
     }
 
+    private void OnNameInput(ChangeEventArgs e)
+    {
+        var value = e.Value?.ToString() ?? "";
+        _name = value;
+        _slug = GenerateSlug(value);
+    }
+
+    private string GenerateSlug(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return "";
+        // Convert to lower, replace spaces with '-', allow a-z and 0-9, remove other chars
+        var slug = new string(input.ToLower().Select(c =>
+            (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ? c :
+            (c == ' ' ? '-' : '\0')).Where(c => c != '\0').ToArray());
+        // Replace multiple dashes with single dash
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, "-+", "-");
+        // Trim dashes
+        slug = slug.Trim('-');
+        return slug;
+    }
+
     private void CancelEdit()
     {
         _editingIngredient = null;
@@ -748,31 +794,6 @@
         }
     }
 
-    // private async Task OnIngredientChanged(ChangeEventArgs e)
-    // {
-    //     if (e.Value?.ToString() == "-1")
-    //     {
-    //         await ShowAddNewIngredientDialog();
-    //         _newRecipeIngredient.IngredientId = 0;
-    //     }
-    //     else
-    //     {
-    //         _newRecipeIngredient.IngredientId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0;
-    //     }
-    // }
-
-    // private async Task OnUnitChanged(ChangeEventArgs e)
-    // {
-    //     if (e.Value?.ToString() == "-1")
-    //     {
-    //         await ShowAddNewUnitDialog();
-    //         _newRecipeIngredient.UnitId = 0;
-    //     }
-    //     else
-    //     {
-    //         _newRecipeIngredient.UnitId = int.TryParse(e.Value?.ToString(), out var id) ? id : 0;
-    //     }
-    // }
 
     private Task ShowAddNewIngredientDialog()
     {
@@ -898,7 +919,7 @@
         _newStep = new Step();
         if (_steps != null)
         {
-            _newStep.Name = $"Step {(_steps.Count + 1)}:";
+            _newStep.Name = $"Step {(_steps.Count + 1).ToString("D2")}:";
         }
     }
 
@@ -908,7 +929,7 @@
         {
             await RecipeService.DeleteStepAsync(stepId, ModuleState.ModuleId);
             await LoadSteps();
-            _newStep.Name = $"Step {(_steps?.Count ?? 0) + 1}:";
+            _newStep.Name = $"Step {(_steps.Count + 1).ToString("D2")}:";
         }
         catch (Exception ex)
         {

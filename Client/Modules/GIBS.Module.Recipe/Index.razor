@@ -1,60 +1,239 @@
 @using GIBS.Module.Recipe.Services
 @using GIBS.Module.Recipe.Models
+@using CategoryModel = GIBS.Module.Recipe.Models.Category
 
 @namespace GIBS.Module.Recipe
 @inherits ModuleBase
 @inject IRecipeService RecipeService
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<Index> Localizer
+@inject ISettingService SettingService
 
-@if (_Recipes == null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <div>
-        <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Manage" ResourceKey="Manage" />
-    </div>
-    <br />
-    <br />
-    @if (@_Recipes.Count != 0)
-    {
-        <Pager Items="@_Recipes">
-            <Header>
-                <th style="width: 1px;">&nbsp;</th>
-                <th style="width: 1px;">&nbsp;</th>
-                <th>@Localizer["Name"]</th>
-                <th>@Localizer["IsFeatured"]</th>
-                <th>@Localizer["RecipeCategory"]</th>
-            </Header>
-            <Row>
-                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.RecipeId.ToString())" ResourceKey="Edit"  /></td>
-                <td><ActionDialog Header="Delete Recipe" Message="Are You Sure You Wish To Delete This Recipe?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.RecipeId.ToString()" /></td>
-                <td>@context.Name</td>
-                <td>@(context.IsFeatured? Localizer["Yes"] : Localizer["No"])</td>
-                <td>
-                    @{
-                        if (_RecipeCategoryLookup.TryGetValue(context.RecipeId, out var categories) && categories.Count > 0)
+<div>
+    <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Manage" ResourceKey="Manage" />
+</div>
+
+<div class="container" id="gibs-recipe">
+    <div class="row">
+        <div class="col-lg-9">
+            @if (_selectedRecipeId.HasValue)
+            {
+                @if (_selectedRecipe != null)
+                {
+                    <div class="recipe-details-card">
+                        <img src="@(_selectedRecipe.ImageURL ?? ModulePath() + "/images/no-image.png")"
+                             alt="@_selectedRecipe.Name"
+                             class="img-fluid rounded recipe-details-image float-end" />
+                        <h1 class="recipe-title">@_selectedRecipe.Name
+                            <ActionLink Action="Edit" Parameters="@($"id={_selectedRecipe.RecipeId}")" ResourceKey="Edit" IconName="pencil" IconOnly Text="Edit" 
+                            Security="SecurityAccessLevel.Edit" Class="btn btn-outline-secondary btn-sm" />
+                        </h1>              
+                        <div class="mb-2">
+                            <div>@_selectedRecipe.Description</div>
+                        </div>
+                        <div class="mb-2">
+                            <div style="white-space: pre-line;">@_selectedRecipe.Instructions</div>
+                        </div>
+                        <div class="mb-2">
+                            <strong>@Localizer["Servings"]:</strong> @_selectedRecipe.Servings
+                        </div>
+                        <div class="mb-2">
+                            <strong>@Localizer["PrepTime"]:</strong> @_selectedRecipe.PrepTime
+                        </div>
+                        <div class="mb-2">
+                            <strong>@Localizer["CookTime"]:</strong> @_selectedRecipe.CookTime
+                        </div>
+                        <div class="mb-2">
+                            
+                            @if (_selectedRecipeCategories != null && _selectedRecipeCategories.Count > 0)
+                            {
+                                
+                                <ul class="list-inline">
+                                    @foreach (var cat in _selectedRecipeCategories)
+                                    {
+                                        <li class="list-inline-item badge bg-secondary mb-2 fs-6"><span class="oi oi-aperture" aria-hidden="true"></span> @cat.Category?.Name</li>
+                                    }
+                                </ul>
+
+                            }
+                            
+                        </div>
+                        @if (_selectedRecipeIngredients != null && _selectedRecipeIngredients.Count > 0)
                         {
-                            <span>
-                                @string.Join("<br /> ", categories.Select(c => c.Category?.Name ?? ""))
-                            </span>
+                            <div class="mb-3 mt-2">
+                                <h5>@Localizer["Ingredients"]</h5>
+                                <ul class="list-group">
+                                    @foreach (var ri in _selectedRecipeIngredients)
+                                    {
+                                        <li class="list-group-item">
+                                            <strong>@ri.Ingredient?.Name</strong>
+                                            @if (ri.Quantity > 0)
+                                            {
+                                                <span>: @ri.Quantity </span>
+                                            }
+                                            @if (ri.Unit != null)
+                                            {
+                                                <span> @ri.Unit.Name </span>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(ri.Notes))
+                                            {
+                                                <span> - @ri.Notes</span>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        @if (_selectedRecipeSteps != null && _selectedRecipeSteps.Count > 0)
+                        {
+                            <div class="mb-3">
+                                <h5>@Localizer["Steps"]</h5>
+                                <ul class="list-group">
+                                    @foreach (var step in _selectedRecipeSteps.OrderBy(s => s.Name))
+                                    {
+                                        <li class="list-group-item">
+                                            @if (!string.IsNullOrWhiteSpace(step.ImageURL))
+                                            {
+                                                <img src="@step.ImageURL" alt="Step Image" class="float-end" style="max-width:120px;max-height:90px;margin-top:8px;" />
+                                            }
+                                            <strong>@(step.Name?.Replace("Step 0", "Step ").Trim())</strong>
+                                            <span style="white-space: pre-line;">@step.Instructions</span>
+                                           
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">@Localizer["NoRecipeFound"]</div>
+                }
+            }
+            else
+            {
+                @* Show FEATURED recipes if no category or recipe is selected *@
+                @if (!_selectedCategoryId.HasValue)
+                {
+                    <h1>@_featuredLabel</h1>
+                    <div class="row">
+                        @if (_featuredRecipes == null)
+                        {
+                            <div class="col-12"><em>@Localizer["LoadingRecipes"]</em></div>
+                        }
+                        else if (_featuredRecipes.Count == 0)
+                        {
+                            <div class="col-12">@Localizer["NoRecipesFound"]</div>
                         }
                         else
                         {
-                            <span>@Localizer["Uncategorized"]</span>
+                            @foreach (var recipe in _featuredRecipes)
+                            {
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card h-100">
+                                        <div class="row g-0">
+                                            <div class="col-md-6 d-flex align-items-start justify-content-center p-2">
+                                                <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top">
+                                                    <img src="@(string.IsNullOrWhiteSpace(recipe.ImageURL) ? ModulePath() + "/images/no-image.png" : recipe.ImageURL)"
+                                                         alt="@recipe.Name" 
+                                                         class="img-fluid rounded featured-recipe-image mt-2" />
+                                                </a>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card-body d-flex flex-column">
+                                                    <h5 class="card-title">
+                                                        <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top">@recipe.Name</a>
+                                                        <ActionLink Action="Edit"
+                                                                    Parameters="@($"id={recipe.RecipeId}")"
+                                                                    Security="SecurityAccessLevel.Edit" Text="Edit" IconName="pencil" IconOnly Class="btn btn-outline-secondary btn-sm"
+                                                                    ResourceKey="Edit" />
+                                                    </h5>
+                                                    <div class="card-text">@recipe.Description</div>
+                                                    <div class="mt-2">
+                                                        
+                                                        @{
+                                                            var cats = _recipeCategoryLookup.TryGetValue(recipe.RecipeId, out var rcats) ? rcats : null;
+                                                            if (cats != null && cats.Count > 0)
+                                                            {
+                                                                <span>@string.Join(", ", cats.Select(c => c.Category?.Name ?? ""))</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span>@Localizer["Uncategorized"]</span>
+                                                            }
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row g-0">
+                                            <div class="col-md-12 text-center">
+                                                <div class="mt-1 mb-2 text-center">
+                                                    <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top" class="btn btn-outline-secondary btn-sm">View Details</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         }
-                    }
-                </td>
-            </Row>
-        </Pager>
-    }
-    else
-    {
-        <p>@Localizer["Message.DisplayNone"]</p>
-    }
-}
+                    </div>
+                }
+
+                @* Show recipes by category if a category is selected *@
+                @if (_selectedCategoryId.HasValue && _recipesByCategory != null && _recipesByCategory.Count > 0)
+                {
+                    <h1>@_selectedCategory?.Name</h1>
+                    <div>
+                        @{
+                            int rowNumber = 0;
+                        }
+                        @foreach (var recipe in _recipesByCategory)
+                        {
+                            <div class="row recipe-listing-row @(rowNumber % 2 == 0 ? "recipe-listing-alt" : "")">
+                                <div class="col-lg-2 col-md-2 col-sm-5 recipe-listing-img text-center">
+                                    <img src="@(string.IsNullOrWhiteSpace(recipe.ImageURL) ? ModulePath() + "/images/no-image.png" : recipe.ImageURL)"
+                                         style="max-width:140px;" alt="@recipe.Name" />
+                                </div>
+                                <div class="col-lg-7 col-md-7 col-sm-5 recipe-listing-info">
+                                    <div class="recipe-listing-title">
+                                        <span>
+                                            <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top"
+                                               alt="@recipe.Name">@recipe.Name</a>
+                                            <ActionLink Action="Edit"
+                                                        Parameters="@($"id={recipe.RecipeId}")"
+                                                        Security="SecurityAccessLevel.Edit" Text="Edit" IconName="pencil" IconOnly Class="btn btn-outline-secondary btn-sm"
+                                                        ResourceKey="Edit" />
+                                        </span>
+                                    </div>
+                                    <div class="recipe-listing-description">
+                                        @recipe.Description
+                                    </div>
+                                </div>
+                                <div class="col-lg-2 col-md-2 col-sm-11 recipe-listing-actions">
+                                    <div class="text-center">
+                                        <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top" class="btn btn-outline-secondary btn-sm">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            rowNumber++;
+                        }
+                    </div>
+                }
+                else if (_selectedCategoryId.HasValue && (_recipesByCategory == null || _recipesByCategory.Count == 0))
+                {
+                    <div class="alert alert-info">@Localizer["NoRecipesFound"]</div>
+                }
+            }
+        </div>
+        <div class="col-lg-3" style="padding-left: 20px; padding-top: 40px;">
+            @RenderCategoryNavigation(_categories)
+        </div>
+    </div>
+</div>
 
 @code {
     public override string RenderMode => RenderModes.Static;
@@ -65,50 +244,112 @@ else
         new Resource { ResourceType = ResourceType.Script, Url = ModulePath() + "Module.js" }
     };
 
-   
-    private List<Recipe> _Recipes;
-    private List<RecipeCategory> _RecipeCategories;
-    private Dictionary<int, List<RecipeCategory>> _RecipeCategoryLookup = new();
+    private List<Recipe> _featuredRecipes;
+    private List<Recipe> _recipesByCategory;
+    private List<CategoryModel> _categories = new();
+    private List<RecipeCategory> _recipeCategories = new();
+    private Dictionary<int, List<RecipeCategory>> _recipeCategoryLookup = new();
+
+    private int? _selectedCategoryId;
+    private int? _selectedRecipeId;
+    private CategoryModel _selectedCategory;
+    private Recipe _selectedRecipe;
+    private List<RecipeCategory> _selectedRecipeCategories = new();
+    private List<RecipeIngredient> _selectedRecipeIngredients = new();
+    private List<Step> _selectedRecipeSteps = new();
+
+    private string _featuredLabel = "Featured Recipes";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _Recipes = await RecipeService.GetRecipesAsync(ModuleState.ModuleId);
-            _RecipeCategories = new List<RecipeCategory>();
+            _featuredLabel = SettingService.GetSetting(ModuleState.Settings, "FeaturedLabel", "Featured Recipes");
 
-            // Load RecipeCategories for all recipes
-            foreach (var recipe in _Recipes)
+            _categories = await RecipeService.GetCategoriesAsync(ModuleState.ModuleId);
+
+            // Parse categoryId from query string
+            if (PageState.QueryString.ContainsKey("catId") && int.TryParse(PageState.QueryString["catId"], out var catId))
             {
-                var categories = await RecipeService.GetRecipeCategoriesAsync(recipe.RecipeId, ModuleState.ModuleId);
-                _RecipeCategories.AddRange(categories);
+                _selectedCategoryId = catId;
+                _selectedRecipeId = null;
+                _selectedCategory = _categories.FirstOrDefault(c => c.CategoryId == catId);
+                _recipesByCategory = await GetRecipesByCategoryAsync(catId);
             }
+            // Parse recipeId from query string
+            else if (PageState.QueryString.ContainsKey("id") && int.TryParse(PageState.QueryString["id"], out var recipeId))
+            {
+                _selectedCategoryId = null;
+                _selectedRecipeId = recipeId;
+                _selectedRecipe = await RecipeService.GetRecipeAsync(recipeId, ModuleState.ModuleId);
+                _selectedRecipeCategories = await RecipeService.GetRecipeCategoriesAsync(recipeId, ModuleState.ModuleId);
+                _selectedRecipeIngredients = await RecipeService.GetRecipeIngredientsAsync(recipeId, ModuleState.ModuleId);
+                _selectedRecipeSteps = await RecipeService.GetStepsAsync(recipeId, ModuleState.ModuleId);
+            }
+            else
+            {
+                _selectedRecipeId = null;
+                _selectedCategoryId = null;
+                _featuredRecipes = (await RecipeService.GetRecipesAsync(ModuleState.ModuleId))
+                    .Where(r => r.IsFeatured && r.IsActive)
+                    .OrderByDescending(r => r.ModifiedOn)
+                    .ToList();
 
-            // Build lookup: RecipeId -> List<RecipeCategory>
-            _RecipeCategoryLookup = _RecipeCategories
-                .GroupBy(rc => rc.RecipeId)
-                .ToDictionary(g => g.Key, g => g.ToList());
+                // Build RecipeCategory lookup for featured recipes
+                _recipeCategories = new List<RecipeCategory>();
+                foreach (var recipe in _featuredRecipes)
+                {
+                    var categories = await RecipeService.GetRecipeCategoriesAsync(recipe.RecipeId, ModuleState.ModuleId);
+                    _recipeCategories.AddRange(categories);
+                }
+                _recipeCategoryLookup = _recipeCategories
+                    .GroupBy(rc => rc.RecipeId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+            }
         }
         catch (Exception ex)
         {
-            await logger.LogError(ex, "Error Loading Recipe {Error}", ex.Message);
+            await logger.LogError(ex, "Error Loading Recipes {Error}", ex.Message);
             AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
         }
     }
 
-    private async Task Delete(Recipe Recipe)
+    private async Task<List<Recipe>> GetRecipesByCategoryAsync(int categoryId)
     {
-        try
+        var allRecipes = await RecipeService.GetRecipesAsync(ModuleState.ModuleId);
+        var recipesInCategory = new List<Recipe>();
+        foreach (var recipe in allRecipes)
         {
-            await RecipeService.DeleteRecipeAsync(Recipe.RecipeId, ModuleState.ModuleId);
-            await logger.LogInformation("Recipe Deleted {Recipe}", Recipe);
-            _Recipes = await RecipeService.GetRecipesAsync(ModuleState.ModuleId);
-            StateHasChanged();
+            var categories = await RecipeService.GetRecipeCategoriesAsync(recipe.RecipeId, ModuleState.ModuleId);
+            if (categories.Any(c => c.CategoryId == categoryId))
+            {
+                recipesInCategory.Add(recipe);
+            }
         }
-        catch (Exception ex)
-        {
-            await logger.LogError(ex, "Error Deleting Recipe {Recipe} {Error}", Recipe, ex.Message);
-            AddModuleMessage(Localizer["Message.DeleteError"], MessageType.Error);
-        }
+        return recipesInCategory;
     }
+
+    private RenderFragment RenderCategoryNavigation(IEnumerable<CategoryModel> items) => builder =>
+    {
+        
+        int seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "category-nav");
+        builder.OpenElement(seq++, "h4");
+        builder.AddContent(seq++, Localizer["Categories"]);
+        builder.CloseElement(); // h4
+
+        @foreach (var item in items)
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "category-link");
+            builder.OpenElement(seq++, "a");
+            builder.AddAttribute(seq++, "href", NavigateUrl() + $"?catId={item.CategoryId}&details={item.Slug}#top");
+            builder.AddAttribute(seq++, "class", "categoryLinks");
+            builder.AddContent(seq++, item.Name);
+            builder.CloseElement(); // a
+            builder.CloseElement(); // div
+        }
+        builder.CloseElement(); // category-nav
+    };
 }
