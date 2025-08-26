@@ -23,7 +23,7 @@
                     <div class="recipe-details-card">
                         <img src="@(_selectedRecipe.ImageURL ?? ModulePath() + "/images/no-image.png")"
                              alt="@_selectedRecipe.Name"
-                             class="img-fluid rounded recipe-details-image float-end" />
+                             class="recipe-details-image float-end" />
                         <h1 class="recipe-title">@_selectedRecipe.Name
                             <ActionLink Action="Edit" Parameters="@($"id={_selectedRecipe.RecipeId}")" ResourceKey="Edit" IconName="pencil" IconOnly Text="Edit" 
                             Security="SecurityAccessLevel.Edit" Class="btn btn-outline-secondary btn-sm" />
@@ -69,7 +69,7 @@
                                             <strong>@ri.Ingredient?.Name</strong>
                                             @if (ri.Quantity > 0)
                                             {
-                                                <span>: @ri.Quantity </span>
+                                                <span>: @(" " + FormatQuantity(ri.Quantity) + " ") </span>
                                             }
                                             @if (ri.Unit != null)
                                             {
@@ -95,7 +95,7 @@
                                         <li class="list-group-item">
                                             @if (!string.IsNullOrWhiteSpace(step.ImageURL))
                                             {
-                                                <img src="@step.ImageURL" alt="Step Image" class="float-end" style="max-width:120px;max-height:90px;margin-top:8px;" />
+                                                <img src="@step.ImageURL" alt="@step.Name" class="recipe-thumbnail float-end" />
                                             }
                                             <strong>@(step.Name?.Replace("Step 0", "Step ").Trim())</strong>
                                             <span style="white-space: pre-line;">@step.Instructions</span>
@@ -151,7 +151,7 @@
                                                                     Security="SecurityAccessLevel.Edit" Text="Edit" IconName="pencil" IconOnly Class="btn btn-outline-secondary btn-sm"
                                                                     ResourceKey="Edit" />
                                                     </h5>
-                                                    <div class="card-text">@recipe.Description</div>
+                                                    <div class="card-text">@Truncate(recipe.Description)</div>
                                                     <div class="mt-2">
                                                         
                                                         @{
@@ -327,6 +327,77 @@
             }
         }
         return recipesInCategory;
+    }
+
+    private string FormatQuantity(decimal quantity)
+    {
+        // Handle whole numbers
+        if (quantity % 1 == 0)
+            return ((int)quantity).ToString();
+
+        // Get whole and fractional parts
+        int whole = (int)Math.Floor(quantity);
+        decimal fraction = quantity - whole;
+
+        // Common fractions
+        var fractions = new Dictionary<decimal, string>
+    {
+        { 0.5m, "1/2" },
+        { 0.25m, "1/4" },
+        { 0.75m, "3/4" },
+        { 0.333m, "1/3" },
+        { 0.666m, "2/3" },
+        { 0.2m, "1/5" },
+        { 0.4m, "2/5" },
+        { 0.6m, "3/5" },
+        { 0.8m, "4/5" }
+    };
+
+        string fractionStr = null;
+        foreach (var kvp in fractions)
+        {
+            if (Math.Abs(fraction - kvp.Key) < 0.01m)
+            {
+                fractionStr = kvp.Value;
+                break;
+            }
+        }
+
+        // If not a common fraction, try to convert to x/y
+        if (fractionStr == null && fraction > 0)
+        {
+            int denominator = 1;
+            decimal temp = fraction;
+            while (temp % 1 != 0 && denominator <= 32)
+            {
+                denominator *= 2;
+                temp = fraction * denominator;
+            }
+            if (denominator <= 32 && temp % 1 == 0)
+            {
+                int numerator = (int)Math.Round(fraction * denominator);
+                fractionStr = $"{numerator}/{denominator}";
+            }
+            else
+            {
+                fractionStr = fraction.ToString("0.##");
+            }
+        }
+
+        if (whole > 0 && !string.IsNullOrEmpty(fractionStr))
+            return $"{whole} & {fractionStr}";
+        else if (whole > 0)
+            return whole.ToString();
+        else
+            return fractionStr ?? quantity.ToString("0.##");
+    }
+
+    private string Truncate(string value, int maxLength = 70)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        return value.Length > maxLength
+            ? value.Substring(0, maxLength) + " . . . "
+            : value;
     }
 
     private RenderFragment RenderCategoryNavigation(IEnumerable<CategoryModel> items) => builder =>

@@ -342,55 +342,10 @@ namespace GIBS.Module.Recipe.Controllers
             }
         }
 
-        //private RecipeDto MapRecipeToDto(GIBS.Module.Recipe.Models.Recipe recipe)
-        //{
-        //    if (recipe == null) return null;
-        //    return new RecipeDto
-        //    {
-        //        RecipeId = recipe.RecipeId,
-        //        ModuleId = recipe.ModuleId,
-        //        Name = recipe.Name,
-        //        Description = recipe.Description,
-        //        Instructions = recipe.Instructions,
-        //        Servings = recipe.Servings,
-        //        PrepTime = recipe.PrepTime,
-        //        CookTime = recipe.CookTime,
-        //        ImageURL = recipe.ImageURL,
-        //        IsFeatured = recipe.IsFeatured,
-        //        IsActive = recipe.IsActive,
-        //        CreatedBy = recipe.CreatedBy,
-        //        CreatedOn = recipe.CreatedOn,
-        //        ModifiedBy = recipe.ModifiedBy,
-        //        ModifiedOn = recipe.ModifiedOn
-        //    };
-        //}
+
 
         // Mapping methods
 
-        //private RecipeDto MapRecipeToDto(GIBS.Module.Recipe.Models.Recipe recipe)
-        //{
-        //    if (recipe == null) return null;
-        //    return new RecipeDto
-        //    {
-        //        RecipeId = recipe.RecipeId,
-        //        ModuleId = recipe.ModuleId,
-        //        Name = recipe.Name,
-        //        Description = recipe.Description,
-        //        Instructions = recipe.Instructions,
-        //        Servings = recipe.Servings,
-        //        PrepTime = recipe.PrepTime,
-        //        CookTime = recipe.CookTime,
-        //        ImageURL = recipe.ImageURL,
-        //        IsFeatured = recipe.IsFeatured,
-        //        IsActive = recipe.IsActive,
-        //        CreatedBy = recipe.CreatedBy,
-        //        CreatedOn = recipe.CreatedOn,
-        //        ModifiedBy = recipe.ModifiedBy,
-        //        ModifiedOn = recipe.ModifiedOn,
-        //        Steps = recipe.Steps?.Select(MapStepToDto).ToList(),
-        //        Ingredients = recipe.RecipeIngredients?.Select(MapRecipeIngredientToDto).ToList()
-        //    };
-        //}
 
         private RecipeDto MapRecipeToDto(GIBS.Module.Recipe.Models.Recipe recipe)
         {

@@ -243,11 +243,37 @@ namespace GIBS.Module.Recipe.Repository
             return category;
         }
 
+        //public Category UpdateCategory(Category category)
+        //{
+        //    _db.Entry(category).State = EntityState.Modified;
+        //    _db.SaveChanges();
+        //    return category;
+        //}
+
         public Category UpdateCategory(Category category)
         {
-            _db.Entry(category).State = EntityState.Modified;
-            _db.SaveChanges();
-            return category;
+            var existing = _db.Category.Find(category.CategoryId);
+            if (existing != null)
+            {
+                // Only update fields that are allowed to change
+                existing.Name = category.Name;
+                existing.Slug = category.Slug;
+                existing.ModuleId = category.ModuleId;
+                // Do NOT overwrite CreatedBy/CreatedOn
+                existing.ModifiedBy = category.ModifiedBy;
+                existing.ModifiedOn = category.ModifiedOn;
+                // Save changes
+                _db.SaveChanges();
+                return existing;
+            }
+            else
+            {
+                // Attach if not tracked
+                _db.Category.Attach(category);
+                _db.Entry(category).State = EntityState.Modified;
+                _db.SaveChanges();
+                return category;
+            }
         }
 
         public void DeleteCategory(int categoryId)

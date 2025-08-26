@@ -33,6 +33,7 @@ else
             <th>@Localizer["Name"]</th>
             <th>@Localizer["IsFeatured"]</th>
             <th>@Localizer["RecipeCategory"]</th>
+            <th>@Localizer["Created"]</th>
             </Header>
             <Row>
                 <td><ActionLink Action="Edit" Parameters="@($"id=" + context.RecipeId.ToString())" ResourceKey="Edit" /></td>
@@ -44,7 +45,7 @@ else
                         if (_RecipeCategoryLookup.TryGetValue(context.RecipeId, out var categories) && categories.Count > 0)
                         {
                             <span>
-                                @string.Join("<br /> ", categories.Select(c => c.Category?.Name ?? ""))
+                                @string.Join(", ", categories.Select(c => c.Category?.Name ?? ""))
                             </span>
                         }
                         else
@@ -53,6 +54,7 @@ else
                         }
                     }
                 </td>
+                <td>@context.CreatedOn.ToLocalTime().ToString("g")</td>
             </Row>
         </Pager>
     }
@@ -63,7 +65,7 @@ else
 }
 
 @code {
-    public override string RenderMode => RenderModes.Static;
+    //public override string RenderMode => RenderModes.Static;
 
     public override List<Resource> Resources => new List<Resource>()
     {

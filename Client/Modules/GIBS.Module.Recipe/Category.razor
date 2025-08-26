@@ -8,81 +8,78 @@
 @inject NavigationManager NavigationManager
 @inject IStringLocalizer<Category> Localizer
 
-
-
 <h3>Categories</h3>
 
-<button class="btn btn-success mb-2" @onclick="ShowAddCategory">Add Category</button>
-
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Slug</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (_categories != null)
-        {
-            @foreach (var category in _categories)
-            {
-                <tr>
-                    <td>@category.Name</td>
-                    <td>@category.Slug</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" @onclick="() => EditCategory(category)">Edit</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteCategory(category.CategoryId)">Delete</button>
-                    </td>
-                </tr>
-            }
-        }
-    </tbody>
-</table>
-
-@if (_showEditModal)
+@if (_categories == null)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(_editingCategory?.CategoryId == 0 ? "Add Category" : "Edit Category")</h5>
-                    <button type="button" class="btn-close" @onclick="CloseEditModal"></button>
+    <p><em>@Localizer["Loading..."]</em></p>
+}
+else
+{
+    <div class="row">
+        <!-- Form Column -->
+        <div class="col-lg-5 col-md-5 mb-3">
+            <div class="card">
+                <div class="card-header">@(_editingCategory == null || _editingCategory.CategoryId == 0 ? "Add New Category" : "Edit Category")</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <Label For="name" HelpText="Enter the category name">Name:</Label>
+                        <input id="name" class="form-control" @bind="_editingCategory.Name" @oninput="OnNameInput" required />
+                    </div>
+                    <div class="mb-2">
+                        <Label For="slug" HelpText="Auto-generated from category name.">Slug:</Label>
+                        <input id="slug" class="form-control" @bind="_editingCategory.Slug" />
+                    </div>
                 </div>
-                <div class="modal-body">
-                    <input class="form-control mb-2" placeholder="Name" @bind="_editingCategory.Name" @oninput="OnNameInput" required />
-                    <input class="form-control mb-2" placeholder="Slug" @bind="_editingCategory.Slug" />
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" @onclick="SaveCategory">Save</button>
-                    <button type="button" class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                <div class="card-footer">
+                    <button type="button" class="btn btn-success" @onclick="SaveCategory">@(_editingCategory == null || _editingCategory.CategoryId == 0 ? Localizer["Add"] : Localizer["Update"])</button>
+                    @if (_editingCategory != null && _editingCategory.CategoryId != 0)
+                    {
+                        <button type="button" class="btn btn-secondary" @onclick="CancelEdit">@Localizer["Cancel"]</button>
+                    }
                 </div>
             </div>
+
+            <br />
+            <br />
+            <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Return to Dashboard" ResourceKey="Cancel" />
+        </div>
+        <!-- Table Column -->
+        <div class="col-lg-7 col-md-7">
+            <Pager Items="@_categories">
+                <Header>
+                <th>Name</th>
+                <th>Slug</th>
+                <th>Created</th>
+                <th></th>
+                </Header>
+                <Row>
+                    <td>@context.Name</td>
+                    <td>@context.Slug</td>
+                    <td>@context.CreatedOn.ToLocalTime().ToString("g")</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditCategory(context)">@Localizer["Edit"]</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteCategory(context.CategoryId)">@Localizer["Delete"]</button>
+                    </td>
+                </Row>
+            </Pager>
         </div>
     </div>
 }
 
 @code {
-
     private List<CategoryModel> _categories;
     private CategoryModel _editingCategory = new CategoryModel();
-    private bool _showEditModal = false;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCategories();
+        CancelEdit();
     }
 
     private async Task LoadCategories()
     {
-        // Replace with your module id as needed
         _categories = await RecipeService.GetCategoriesAsync(ModuleState.ModuleId);
-    }
-
-    private void ShowAddCategory()
-    {
-        _editingCategory = new CategoryModel { CategoryId = 0, ModuleId = ModuleState.ModuleId };
-        _showEditModal = true;
     }
 
     private void OnNameInput(ChangeEventArgs e)
@@ -95,17 +92,13 @@
     private string GenerateSlug(string input)
     {
         if (string.IsNullOrWhiteSpace(input)) return "";
-        // Convert to lower, replace spaces with '-', allow a-z and 0-9, remove other chars
         var slug = new string(input.ToLower().Select(c =>
             (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ? c :
             (c == ' ' ? '-' : '\0')).Where(c => c != '\0').ToArray());
-        // Replace multiple dashes with single dash
         slug = System.Text.RegularExpressions.Regex.Replace(slug, "-+", "-");
-        // Trim dashes
         slug = slug.Trim('-');
         return slug;
     }
-
 
     private void EditCategory(CategoryModel category)
     {
@@ -116,21 +109,28 @@
             Name = category.Name,
             Slug = category.Slug
         };
-        _showEditModal = true;
+    }
+
+    private void CancelEdit()
+    {
+        _editingCategory = new CategoryModel { CategoryId = 0, ModuleId = ModuleState.ModuleId };
     }
 
     private async Task SaveCategory()
     {
         if (string.IsNullOrWhiteSpace(_editingCategory.Name))
+        {
+            AddModuleMessage("Please enter a category name.", MessageType.Warning);
             return;
+        }
 
         if (_editingCategory.CategoryId == 0)
             await RecipeService.AddCategoryAsync(_editingCategory);
         else
             await RecipeService.UpdateCategoryAsync(_editingCategory);
 
-        _showEditModal = false;
         await LoadCategories();
+        CancelEdit();
         StateHasChanged();
     }
 
@@ -138,10 +138,6 @@
     {
         await RecipeService.DeleteCategoryAsync(categoryId, ModuleState.ModuleId);
         await LoadCategories();
-    }
-
-    private void CloseEditModal()
-    {
-        _showEditModal = false;
+        CancelEdit();
     }
 }

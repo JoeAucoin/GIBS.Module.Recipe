@@ -48,7 +48,7 @@
             </div>
         </div>
         <div class="row mb-1 align-items-center">
-            <Label Class="col-sm-3" For="instructions" HelpText="Enter the recipe instructions" ResourceKey="Instructions">Preparation Instructions: </Label>
+            <Label Class="col-sm-3" For="instructions" HelpText="Enter the recipe instructions" ResourceKey="Instructions">Notes/Suggestions: </Label>
             <div class="col-sm-9">
                 <textarea id="instructions" class="form-control" @bind="@_instructions" rows="10"></textarea>
             </div>
@@ -553,7 +553,10 @@
                     recipe = await RecipeService.AddRecipeAsync(recipe);
                     await logger.LogInformation("Recipe Added {Recipe}", recipe);
                     // Navigate to edit mode to allow adding ingredients
-                    NavigationManager.NavigateTo(NavigateUrl("Edit", "id=" + recipe.RecipeId));
+                    //NavigationManager.NavigateTo(ReturnUrl(myNewId.ToString()));
+                     _id = Int32.Parse(recipe.RecipeId.ToString());
+                    PageState.Action = "Edit";
+                    StateHasChanged();
                 }
                 else
                 {
@@ -637,10 +640,11 @@
                     await RecipeService.UpdateRecipeIngredientAsync(_editingIngredient);
                 }
                 await LoadIngredients();
+                CancelEdit();
                 _newRecipeIngredient.IngredientId = 0; // Reset ingredient select
                 _newRecipeIngredient.UnitId = 0; // Reset unit select
                 StateHasChanged();
-                CancelEdit();
+                
             }
             else
             {
@@ -936,5 +940,18 @@
             await logger.LogError(ex, "Error deleting step: {Error}", ex.Message);
             AddModuleMessage("Error deleting step.", MessageType.Error);
         }
+    }
+
+    private string ReturnUrl()
+    {
+        if (ModuleState != null)
+        {
+            return (!string.IsNullOrEmpty(NavigateUrl() + "/*/" + ModuleState.ModuleId + "/Edit")) ? NavigateUrl() + "/*/" + ModuleState.ModuleId + "/Edit" : NavigateUrl();
+        }
+        else
+        {
+            return NavigateUrl();
+        }
+        //    return NavigateUrl();
     }
 }
