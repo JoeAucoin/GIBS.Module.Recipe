@@ -218,5 +218,57 @@ namespace GIBS.Module.Recipe.Services
             await DeleteAsync(CreateAuthorizationPolicyUrl($"{Apiurl}/recipecategory/{recipeCategoryId}", EntityNames.Module, moduleId));
         }
 
+        // Tag CRUD
+        public async Task<List<Tag>> GetTagsAsync(int moduleId)
+        {
+            return await GetJsonAsync<List<Tag>>(CreateAuthorizationPolicyUrl($"{Apiurl}/tag", EntityNames.Module, moduleId));
+        }
+
+        public async Task<Tag> GetTagAsync(int tagId, int moduleId)
+        {
+            return await GetJsonAsync<Tag>(CreateAuthorizationPolicyUrl($"{Apiurl}/tag/{tagId}", EntityNames.Module, moduleId));
+        }
+
+        public async Task<Tag> AddTagAsync(Tag tag)
+        {
+            return await PostJsonAsync<Tag>(CreateAuthorizationPolicyUrl($"{Apiurl}/tag", EntityNames.Module, tag.ModuleId), tag);
+        }
+
+        public async Task<Tag> UpdateTagAsync(Tag tag)
+        {
+            return await PutJsonAsync<Tag>(CreateAuthorizationPolicyUrl($"{Apiurl}/tag/{tag.TagId}", EntityNames.Module, tag.ModuleId), tag);
+        }
+
+        public async Task DeleteTagAsync(int tagId, int moduleId)
+        {
+            await DeleteAsync(CreateAuthorizationPolicyUrl($"{Apiurl}/tag/{tagId}", EntityNames.Module, moduleId));
+        }
+
+        // RecipeTag CRUD
+        public async Task<List<RecipeTag>> GetRecipeTagsAsync(int recipeId, int moduleId)
+        {
+            return await GetJsonAsync<List<RecipeTag>>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipetag/getbyrecipe/{recipeId}", EntityNames.Module, moduleId));
+        }
+
+        public async Task<RecipeTag> GetRecipeTagAsync(int recipeTagId, int moduleId)
+        {
+            return await GetJsonAsync<RecipeTag>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipetag/{recipeTagId}", EntityNames.Module, moduleId));
+        }
+
+        public async Task<RecipeTag> AddRecipeTagAsync(RecipeTag recipeTag)
+        {
+            return await PostJsonAsync<RecipeTag>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipetag", EntityNames.Module, recipeTag.ModuleId), recipeTag);
+        }
+
+        public async Task<RecipeTag> UpdateRecipeTagAsync(RecipeTag recipeTag)
+        {
+            return await PutJsonAsync<RecipeTag>(CreateAuthorizationPolicyUrl($"{Apiurl}/recipetag/{recipeTag.RecipeTagId}", EntityNames.Module, recipeTag.ModuleId), recipeTag);
+        }
+
+        public async Task DeleteRecipeTagAsync(int recipeTagId, int moduleId)
+        {
+            await DeleteAsync(CreateAuthorizationPolicyUrl($"{Apiurl}/recipetag/{recipeTagId}", EntityNames.Module, moduleId));
+        }
+
     }
 }

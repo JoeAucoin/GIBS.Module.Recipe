@@ -12,7 +12,21 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.03);
 }
 
-    .category-nav h4 {
+.category-nav h4 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.tag-nav {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+    .tag-nav h4 {
         font-size: 1.2rem;
         margin-bottom: 15px;
         font-weight: 600;
@@ -164,6 +178,10 @@
     }
 
     .category-nav {
+        padding: 15px 8px;
+    }
+
+    .tag-nav {
         padding: 15px 8px;
     }
 }

@@ -316,5 +316,90 @@ namespace GIBS.Module.Recipe.Repository
             _db.RecipeCategory.Remove(recipeCategory);
             _db.SaveChanges();
         }
+
+        // Tag CRUD
+        public IEnumerable<Tag> GetTags(int moduleId)
+        {
+            return _db.Tag.Where(t => t.ModuleId == moduleId).OrderBy(t => t.Name);
+        }
+
+        public Tag GetTag(int tagId)
+        {
+            return _db.Tag.Find(tagId);
+        }
+
+        public Tag AddTag(Tag tag)
+        {
+            _db.Tag.Add(tag);
+            _db.SaveChanges();
+            return tag;
+        }
+
+        public Tag UpdateTag(Tag tag)
+        {
+            var existing = _db.Tag.Find(tag.TagId);
+            if (existing != null)
+            {
+                _db.Entry(existing).CurrentValues.SetValues(tag);
+            }
+            else
+            {
+                _db.Tag.Attach(tag);
+                _db.Entry(tag).State = EntityState.Modified;
+            }
+            _db.SaveChanges();
+            return tag;
+        }
+
+        public void DeleteTag(int tagId)
+        {
+            Tag tag = _db.Tag.Find(tagId);
+            _db.Tag.Remove(tag);
+            _db.SaveChanges();
+        }
+
+        // RecipeTag CRUD
+        public IEnumerable<RecipeTag> GetRecipeTags(int recipeId)
+        {
+            return _db.RecipeTag
+                .Include(rt => rt.Tag)
+                .Include(rt => rt.Recipe)
+                .Where(rt => rt.RecipeId == recipeId);
+        }
+
+        public RecipeTag GetRecipeTag(int recipeTagId)
+        {
+            return _db.RecipeTag.Find(recipeTagId);
+        }
+
+        public RecipeTag AddRecipeTag(RecipeTag recipeTag)
+        {
+            _db.RecipeTag.Add(recipeTag);
+            _db.SaveChanges();
+            return recipeTag;
+        }
+
+        public RecipeTag UpdateRecipeTag(RecipeTag recipeTag)
+        {
+            var existing = _db.RecipeTag.Find(recipeTag.RecipeTagId);
+            if (existing != null)
+            {
+                _db.Entry(existing).CurrentValues.SetValues(recipeTag);
+            }
+            else
+            {
+                _db.RecipeTag.Attach(recipeTag);
+                _db.Entry(recipeTag).State = EntityState.Modified;
+            }
+            _db.SaveChanges();
+            return recipeTag;
+        }
+
+        public void DeleteRecipeTag(int recipeTagId)
+        {
+            RecipeTag recipeTag = _db.RecipeTag.Find(recipeTagId);
+            _db.RecipeTag.Remove(recipeTag);
+            _db.SaveChanges();
+        }
     }
 }

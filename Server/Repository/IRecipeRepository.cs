@@ -51,5 +51,19 @@ namespace GIBS.Module.Recipe.Repository
         RecipeCategory AddRecipeCategory(RecipeCategory recipeCategory);
         RecipeCategory UpdateRecipeCategory(RecipeCategory recipeCategory);
         void DeleteRecipeCategory(int recipeCategoryId);
+
+        // Tag CRUD
+        IEnumerable<Tag> GetTags(int moduleId);
+        Tag GetTag(int tagId);
+        Tag AddTag(Tag tag);
+        Tag UpdateTag(Tag tag);
+        void DeleteTag(int tagId);
+
+        // RecipeTag CRUD
+        IEnumerable<RecipeTag> GetRecipeTags(int recipeId);
+        RecipeTag GetRecipeTag(int recipeTagId);
+        RecipeTag AddRecipeTag(RecipeTag recipeTag);
+        RecipeTag UpdateRecipeTag(RecipeTag recipeTag);
+        void DeleteRecipeTag(int recipeTagId);
     }
 }

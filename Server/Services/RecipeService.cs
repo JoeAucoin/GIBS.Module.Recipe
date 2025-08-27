@@ -407,5 +407,63 @@ namespace GIBS.Module.Recipe.Services
             _recipeRepository.DeleteRecipeCategory(recipeCategoryId);
             return Task.CompletedTask;
         }
+
+        // Tag Service Methods
+        public Task<List<Tag>> GetTagsAsync(int moduleId)
+        {
+            return Task.FromResult(_recipeRepository.GetTags(moduleId).ToList());
+        }
+
+        public Task<Tag> GetTagAsync(int tagId, int moduleId)
+        {
+            return Task.FromResult(_recipeRepository.GetTag(tagId));
+        }
+
+        public Task<Tag> AddTagAsync(Tag tag)
+        {
+            tag = _recipeRepository.AddTag(tag);
+            return Task.FromResult(tag);
+        }
+
+        public Task<Tag> UpdateTagAsync(Tag tag)
+        {
+            tag = _recipeRepository.UpdateTag(tag);
+            return Task.FromResult(tag);
+        }
+
+        public Task DeleteTagAsync(int tagId, int moduleId)
+        {
+            _recipeRepository.DeleteTag(tagId);
+            return Task.CompletedTask;
+        }
+
+        // RecipeTag Service Methods
+        public Task<List<RecipeTag>> GetRecipeTagsAsync(int recipeId, int moduleId)
+        {
+            return Task.FromResult(_recipeRepository.GetRecipeTags(recipeId).ToList());
+        }
+
+        public Task<RecipeTag> GetRecipeTagAsync(int recipeTagId, int moduleId)
+        {
+            return Task.FromResult(_recipeRepository.GetRecipeTag(recipeTagId));
+        }
+
+        public Task<RecipeTag> AddRecipeTagAsync(RecipeTag recipeTag)
+        {
+            recipeTag = _recipeRepository.AddRecipeTag(recipeTag);
+            return Task.FromResult(recipeTag);
+        }
+
+        public Task<RecipeTag> UpdateRecipeTagAsync(RecipeTag recipeTag)
+        {
+            recipeTag = _recipeRepository.UpdateRecipeTag(recipeTag);
+            return Task.FromResult(recipeTag);
+        }
+
+        public Task DeleteRecipeTagAsync(int recipeTagId, int moduleId)
+        {
+            _recipeRepository.DeleteRecipeTag(recipeTagId);
+            return Task.CompletedTask;
+        }
     }
 }

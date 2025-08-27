@@ -55,5 +55,19 @@ namespace GIBS.Module.Recipe.Services
         Task<RecipeCategory> AddRecipeCategoryAsync(RecipeCategory recipeCategory);
         Task<RecipeCategory> UpdateRecipeCategoryAsync(RecipeCategory recipeCategory);
         Task DeleteRecipeCategoryAsync(int recipeCategoryId, int moduleId);
+
+        // Tag CRUD
+        Task<List<Tag>> GetTagsAsync(int moduleId);
+        Task<Tag> GetTagAsync(int tagId, int moduleId);
+        Task<Tag> AddTagAsync(Tag tag);
+        Task<Tag> UpdateTagAsync(Tag tag);
+        Task DeleteTagAsync(int tagId, int moduleId);
+
+        // RecipeTag CRUD
+        Task<List<RecipeTag>> GetRecipeTagsAsync(int recipeId, int moduleId);
+        Task<RecipeTag> GetRecipeTagAsync(int recipeTagId, int moduleId);
+        Task<RecipeTag> AddRecipeTagAsync(RecipeTag recipeTag);
+        Task<RecipeTag> UpdateRecipeTagAsync(RecipeTag recipeTag);
+        Task DeleteRecipeTagAsync(int recipeTagId, int moduleId);
     }
 }

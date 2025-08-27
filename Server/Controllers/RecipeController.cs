@@ -576,5 +576,106 @@ namespace GIBS.Module.Recipe.Controllers
             await _recipeService.DeleteRecipeCategoryAsync(id, AuthEntityId(EntityNames.Module));
         }
 
+        // GET: api/<controller>/tag?moduleid=x
+        [HttpGet("tag")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<IEnumerable<Tag>> GetTags(string moduleid)
+        {
+            if (int.TryParse(moduleid, out int ModuleId) && IsAuthorizedEntityId(EntityNames.Module, ModuleId))
+            {
+                return await _recipeService.GetTagsAsync(ModuleId);
+            }
+            return null;
+        }
+
+        // GET: api/<controller>/tag/1
+        [HttpGet("tag/{id}")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<Tag> GetTag(int id)
+        {
+            return await _recipeService.GetTagAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
+        // POST: api/<controller>/tag
+        [HttpPost("tag")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<Tag> PostTag([FromBody] Tag tag)
+        {
+            if (ModelState.IsValid && IsAuthorizedEntityId(EntityNames.Module, tag.ModuleId))
+            {
+                return await _recipeService.AddTagAsync(tag);
+            }
+            return null;
+        }
+
+        // PUT: api/<controller>/tag/1
+        [HttpPut("tag/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<Tag> PutTag(int id, [FromBody] Tag tag)
+        {
+            if (ModelState.IsValid && tag.TagId == id && IsAuthorizedEntityId(EntityNames.Module, tag.ModuleId))
+            {
+                return await _recipeService.UpdateTagAsync(tag);
+            }
+            return null;
+        }
+
+        // DELETE: api/<controller>/tag/1
+        [HttpDelete("tag/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task DeleteTag(int id)
+        {
+            await _recipeService.DeleteTagAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
+
+        // GET: api/<controller>/recipetag/getbyrecipe/1
+        [HttpGet("recipetag/getbyrecipe/{recipeId}")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<IEnumerable<RecipeTag>> GetRecipeTags(int recipeId)
+        {
+            return await _recipeService.GetRecipeTagsAsync(recipeId, AuthEntityId(EntityNames.Module));
+        }
+
+        // GET: api/<controller>/recipetag/1
+        [HttpGet("recipetag/{id}")]
+        [Authorize(Policy = PolicyNames.ViewModule)]
+        public async Task<RecipeTag> GetRecipeTag(int id)
+        {
+            return await _recipeService.GetRecipeTagAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
+        // POST: api/<controller>/recipetag
+        [HttpPost("recipetag")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<RecipeTag> PostRecipeTag([FromBody] RecipeTag recipeTag)
+        {
+            if (ModelState.IsValid && IsAuthorizedEntityId(EntityNames.Module, recipeTag.ModuleId))
+            {
+                return await _recipeService.AddRecipeTagAsync(recipeTag);
+            }
+            return null;
+        }
+
+        // PUT: api/<controller>/recipetag/1
+        [HttpPut("recipetag/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<RecipeTag> PutRecipeTag(int id, [FromBody] RecipeTag recipeTag)
+        {
+            if (ModelState.IsValid && recipeTag.RecipeTagId == id && IsAuthorizedEntityId(EntityNames.Module, recipeTag.ModuleId))
+            {
+                return await _recipeService.UpdateRecipeTagAsync(recipeTag);
+            }
+            return null;
+        }
+
+        // DELETE: api/<controller>/recipetag/1
+        [HttpDelete("recipetag/{id}")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task DeleteRecipeTag(int id)
+        {
+            await _recipeService.DeleteRecipeTagAsync(id, AuthEntityId(EntityNames.Module));
+        }
+
     }
 }

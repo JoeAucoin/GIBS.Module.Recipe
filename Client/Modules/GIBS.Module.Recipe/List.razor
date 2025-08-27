@@ -17,9 +17,10 @@
 else
 {
     <div>
-        <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add Recipe" ResourceKey="Add" />
+        <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add New Recipe" ResourceKey="Add" />
         <ActionLink Action="Ingredients" Security="SecurityAccessLevel.Edit" Text="Manage Ingredients" ResourceKey="Ingredient" />
         <ActionLink Action="Units" Security="SecurityAccessLevel.Edit" Text="Manage Units" ResourceKey="Unit" />
+        <ActionLink Action="Tags" Security="SecurityAccessLevel.Edit" Text="Manage Tags" ResourceKey="Tag" />
         <ActionLink Action="Category" Security="SecurityAccessLevel.Edit" Text="Manage Categories" ResourceKey="Category" />
     </div>
     <br />
@@ -31,15 +32,14 @@ else
             <th style="width: 1px;">&nbsp;</th>
             <th style="width: 1px;">&nbsp;</th>
             <th>@Localizer["Name"]</th>
-            <th>@Localizer["IsFeatured"]</th>
             <th>@Localizer["RecipeCategory"]</th>
+            <th>@Localizer["IsFeatured"]</th>
             <th>@Localizer["Created"]</th>
             </Header>
             <Row>
                 <td><ActionLink Action="Edit" Parameters="@($"id=" + context.RecipeId.ToString())" ResourceKey="Edit" /></td>
                 <td><ActionDialog Header="Delete Recipe" Message="Are You Sure You Wish To Delete This Recipe?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete" Id="@context.RecipeId.ToString()" /></td>
-                <td>@context.Name</td>
-                <td>@(context.IsFeatured? Localizer["Yes"] : Localizer["No"])</td>
+                <td>@context.Name</td> 
                 <td>
                     @{
                         if (_RecipeCategoryLookup.TryGetValue(context.RecipeId, out var categories) && categories.Count > 0)
@@ -54,6 +54,7 @@ else
                         }
                     }
                 </td>
+                 <td>@(context.IsFeatured? Localizer["Yes"] : Localizer["No"])</td>
                 <td>@context.CreatedOn.ToLocalTime().ToString("g")</td>
             </Row>
         </Pager>

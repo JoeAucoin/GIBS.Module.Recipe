@@ -10,7 +10,9 @@
 @inject ISettingService SettingService
 
 <div>
+    <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add Recipe" ResourceKey="Add" IconName="plus" IconOnly />
     <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Manage" ResourceKey="Manage" />
+   
 </div>
 
 <div class="container" id="gibs-recipe">
@@ -231,6 +233,8 @@
         </div>
         <div class="col-lg-3" style="padding-left: 20px; padding-top: 40px;">
             @RenderCategoryNavigation(_categories)
+
+            @RenderTagNavigation(_tags)
         </div>
     </div>
 </div>
@@ -247,6 +251,7 @@
     private List<Recipe> _featuredRecipes;
     private List<Recipe> _recipesByCategory;
     private List<CategoryModel> _categories = new();
+    private List<Tag> _tags = new();
     private List<RecipeCategory> _recipeCategories = new();
     private Dictionary<int, List<RecipeCategory>> _recipeCategoryLookup = new();
 
@@ -267,6 +272,7 @@
             _featuredLabel = SettingService.GetSetting(ModuleState.Settings, "FeaturedLabel", "Featured Recipes");
 
             _categories = await RecipeService.GetCategoriesAsync(ModuleState.ModuleId);
+            _tags = await RecipeService.GetTagsAsync(ModuleState.ModuleId); // <-- Load tags
 
             // Parse categoryId from query string
             if (PageState.QueryString.ContainsKey("catId") && int.TryParse(PageState.QueryString["catId"], out var catId))
@@ -275,6 +281,7 @@
                 _selectedRecipeId = null;
                 _selectedCategory = _categories.FirstOrDefault(c => c.CategoryId == catId);
                 _recipesByCategory = await GetRecipesByCategoryAsync(catId);
+                SetPageTitle(_selectedCategory?.Name ?? Localizer["Category"] + " - " + Localizer["Recipes"]);
             }
             // Parse recipeId from query string
             else if (PageState.QueryString.ContainsKey("id") && int.TryParse(PageState.QueryString["id"], out var recipeId))
@@ -285,6 +292,7 @@
                 _selectedRecipeCategories = await RecipeService.GetRecipeCategoriesAsync(recipeId, ModuleState.ModuleId);
                 _selectedRecipeIngredients = await RecipeService.GetRecipeIngredientsAsync(recipeId, ModuleState.ModuleId);
                 _selectedRecipeSteps = await RecipeService.GetStepsAsync(recipeId, ModuleState.ModuleId);
+                SetPageTitle(_selectedRecipe?.Name ?? Localizer["RecipeDetails"]);
             }
             else
             {
@@ -399,6 +407,32 @@
             ? value.Substring(0, maxLength) + " . . . "
             : value;
     }
+
+    private RenderFragment RenderTagNavigation(IEnumerable<Tag> items) => builder =>
+    {
+        int seq = 0;
+        builder.OpenElement(seq++, "div");
+        builder.AddAttribute(seq++, "class", "tag-nav");
+        builder.OpenElement(seq++, "h4");
+        builder.AddContent(seq++, Localizer["Tags"]);
+        builder.CloseElement(); // h4
+
+        builder.OpenElement(seq++, "ul");
+        builder.AddAttribute(seq++, "class", "list-inline");
+        foreach (var item in items)
+        {
+            builder.OpenElement(seq++, "li");
+            builder.AddAttribute(seq++, "class", "list-inline-item badge bg-secondary mb-2 fs-6");
+            builder.OpenElement(seq++, "a");
+            builder.AddAttribute(seq++, "href", NavigateUrl() + $"?tagId={item.TagId}&details={item.Name.Replace(" ", "-")}#top");
+            builder.AddAttribute(seq++, "class", "tagLinks text-white");
+            builder.AddContent(seq++, item.Name);
+            builder.CloseElement(); // a
+            builder.CloseElement(); // li
+        }
+        builder.CloseElement(); // ul
+        builder.CloseElement(); // div
+    };
 
     private RenderFragment RenderCategoryNavigation(IEnumerable<CategoryModel> items) => builder =>
     {

@@ -1,0 +1,130 @@
+﻿@using Oqtane.Modules.Controls
+@using GIBS.Module.Recipe.Services
+@using GIBS.Module.Recipe.Models
+
+@namespace GIBS.Module.Recipe
+@inherits ModuleBase
+@inject IRecipeService RecipeService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Tags> Localizer
+
+<h3>@Localizer["Tags"]</h3>
+
+@if (_tags == null)
+{
+    <p><em>@Localizer["Loading..."]</em></p>
+}
+else
+{
+    <div class="row">
+        <!-- Form Column -->
+        <div class="col-lg-5 col-md-5 mb-3">
+            <div class="card">
+                <div class="card-header">@(_editingTag == null || _editingTag.TagId == 0 ? Localizer["AddNewTag"] : Localizer["EditTag"])</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label for="tag-name">@Localizer["Name"]:</label>
+                        <input id="tag-name" class="form-control" @bind="_editingTag.Name" required />
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button type="button" class="btn btn-success" @onclick="SaveTag" title="@(_editingTag == null || _editingTag.TagId == 0 ? Localizer["Add"] : Localizer["Update"])">
+                        @(_editingTag == null || _editingTag.TagId == 0 ? Localizer["Add"] : Localizer["Update"])
+                    </button>
+                    @if (_editingTag != null && _editingTag.TagId != 0)
+                    {
+                        <button type="button" class="btn btn-secondary" @onclick="CancelEdit" title="@Localizer["Cancel"]">@Localizer["Cancel"]</button>
+                    }
+                </div>
+            </div>
+        </div>
+        <!-- Table Column -->
+        <div class="col-lg-7 col-md-7">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>@Localizer["Name"]</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tag in _tags)
+                    {
+                        <tr>
+                            <td>@tag.Name</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-primary" @onclick="() => EditTag(tag)" title="@Localizer["Edit"]">@Localizer["Edit"]</button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteTag(tag.TagId)" title="@Localizer["Delete"]">@Localizer["Delete"]</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+ 
+}
+
+@code {
+    private List<Tag> _tags;
+    private Tag _editingTag = new Tag();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTags();
+        CancelEdit();
+    }
+
+    private async Task LoadTags()
+    {
+        try
+        {
+            _tags = await RecipeService.GetTagsAsync(ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading tags: {ex.Message}");
+            // Optionally show a message in the UI
+        }
+    }
+
+    private void EditTag(Tag tag)
+    {
+        _editingTag = new Tag
+        {
+            TagId = tag.TagId,
+            ModuleId = tag.ModuleId,
+            Name = tag.Name
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingTag = new Tag { TagId = 0, ModuleId = ModuleState.ModuleId };
+    }
+
+    private async Task SaveTag()
+    {
+        if (string.IsNullOrWhiteSpace(_editingTag.Name))
+        {
+            // Optionally show a message
+            return;
+        }
+
+        if (_editingTag.TagId == 0)
+            await RecipeService.AddTagAsync(_editingTag);
+        else
+            await RecipeService.UpdateTagAsync(_editingTag);
+
+        await LoadTags();
+        CancelEdit();
+        StateHasChanged();
+    }
+
+    private async Task DeleteTag(int tagId)
+    {
+        await RecipeService.DeleteTagAsync(tagId, ModuleState.ModuleId);
+        await LoadTags();
+        CancelEdit();
+    }
+}
