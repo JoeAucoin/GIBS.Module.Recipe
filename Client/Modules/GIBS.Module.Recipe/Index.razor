@@ -12,7 +12,6 @@
 <div>
     <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add Recipe" ResourceKey="Add" IconName="plus" IconOnly />
     <ActionLink Action="List" Security="SecurityAccessLevel.Edit" Text="Manage" ResourceKey="Manage" />
-   
 </div>
 
 <div class="container" id="gibs-recipe">
@@ -46,19 +45,15 @@
                             <strong>@Localizer["CookTime"]:</strong> @_selectedRecipe.CookTime
                         </div>
                         <div class="mb-2">
-                            
                             @if (_selectedRecipeCategories != null && _selectedRecipeCategories.Count > 0)
                             {
-                                
                                 <ul class="list-inline">
                                     @foreach (var cat in _selectedRecipeCategories)
                                     {
                                         <li class="list-inline-item badge bg-secondary mb-2 fs-6"><span class="oi oi-aperture" aria-hidden="true"></span> @cat.Category?.Name</li>
                                     }
                                 </ul>
-
                             }
-                            
                         </div>
                         @if (_selectedRecipeIngredients != null && _selectedRecipeIngredients.Count > 0)
                         {
@@ -86,7 +81,6 @@
                                 </ul>
                             </div>
                         }
-
                         @if (_selectedRecipeSteps != null && _selectedRecipeSteps.Count > 0)
                         {
                             <div class="mb-3">
@@ -101,13 +95,11 @@
                                             }
                                             <strong>@(step.Name?.Replace("Step 0", "Step ").Trim())</strong>
                                             <span style="white-space: pre-line;">@step.Instructions</span>
-                                           
                                         </li>
                                     }
                                 </ul>
                             </div>
                         }
-
                     </div>
                 }
                 else
@@ -117,8 +109,52 @@
             }
             else
             {
-                @* Show FEATURED recipes if no category or recipe is selected *@
-                @if (!_selectedCategoryId.HasValue)
+                @* Show recipes by tag if a tag is selected *@
+                @if (_selectedTagId.HasValue && _recipesByTag != null && _recipesByTag.Count > 0)
+                {
+                    <h1>@_selectedTag?.Name Recipes</h1>
+                    <div>
+                        @{
+                            int rowNumber = 0;
+                        }
+                        @foreach (var recipe in _recipesByTag)
+                        {
+                            <div class="row recipe-listing-row @(rowNumber % 2 == 0 ? "recipe-listing-alt" : "")">
+                                <div class="col-lg-2 col-md-2 col-sm-5 recipe-listing-img text-center">
+                                    <img src="@(string.IsNullOrWhiteSpace(recipe.ImageURL) ? ModulePath() + "/images/no-image.png" : recipe.ImageURL)"
+                                         style="max-width:140px;" alt="@recipe.Name" />
+                                </div>
+                                <div class="col-lg-7 col-md-7 col-sm-5 recipe-listing-info">
+                                    <div class="recipe-listing-title">
+                                        <span>
+                                            <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top"
+                                               alt="@recipe.Name">@recipe.Name</a>
+                                            <ActionLink Action="Edit"
+                                                        Parameters="@($"id={recipe.RecipeId}")"
+                                                        Security="SecurityAccessLevel.Edit" Text="Edit" IconName="pencil" IconOnly Class="btn btn-outline-secondary btn-sm"
+                                                        ResourceKey="Edit" />
+                                        </span>
+                                    </div>
+                                    <div class="recipe-listing-description">
+                                        @(Truncate(recipe.Description, 205))
+                                    </div>
+                                </div>
+                                <div class="col-lg-2 col-md-2 col-sm-11 recipe-listing-actions">
+                                    <div class="text-center">
+                                        <a href="@NavigateUrl()?id=@recipe.RecipeId&details=@recipe.Slug#top" class="btn btn-outline-secondary btn-sm">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            rowNumber++;
+                        }
+                    </div>
+                }
+                else if (_selectedTagId.HasValue && (_recipesByTag == null || _recipesByTag.Count == 0))
+                {
+                    <div class="alert alert-info">@Localizer["NoRecipesFound"]</div>
+                }
+                @* Show FEATURED recipes if no category or tag or recipe is selected *@
+                else if (!_selectedCategoryId.HasValue)
                 {
                     <h1>@_featuredLabel</h1>
                     <div class="row">
@@ -155,7 +191,6 @@
                                                     </h5>
                                                     <div class="card-text">@Truncate(recipe.Description)</div>
                                                     <div class="mt-2">
-                                                        
                                                         @{
                                                             var cats = _recipeCategoryLookup.TryGetValue(recipe.RecipeId, out var rcats) ? rcats : null;
                                                             if (cats != null && cats.Count > 0)
@@ -184,9 +219,8 @@
                         }
                     </div>
                 }
-
                 @* Show recipes by category if a category is selected *@
-                @if (_selectedCategoryId.HasValue && _recipesByCategory != null && _recipesByCategory.Count > 0)
+                else if (_selectedCategoryId.HasValue && _recipesByCategory != null && _recipesByCategory.Count > 0)
                 {
                     <h1>@_selectedCategory?.Name</h1>
                     <div>
@@ -212,7 +246,7 @@
                                         </span>
                                     </div>
                                     <div class="recipe-listing-description">
-                                        @recipe.Description
+                                        @(Truncate(recipe.Description, 205))
                                     </div>
                                 </div>
                                 <div class="col-lg-2 col-md-2 col-sm-11 recipe-listing-actions">
@@ -233,7 +267,8 @@
         </div>
         <div class="col-lg-3" style="padding-left: 20px; padding-top: 40px;">
             @RenderCategoryNavigation(_categories)
-
+            <br/>
+            <br/>
             @RenderTagNavigation(_tags)
         </div>
     </div>
@@ -250,6 +285,7 @@
 
     private List<Recipe> _featuredRecipes;
     private List<Recipe> _recipesByCategory;
+    private List<Recipe> _recipesByTag;
     private List<CategoryModel> _categories = new();
     private List<Tag> _tags = new();
     private List<RecipeCategory> _recipeCategories = new();
@@ -257,7 +293,9 @@
 
     private int? _selectedCategoryId;
     private int? _selectedRecipeId;
+    private int? _selectedTagId;
     private CategoryModel _selectedCategory;
+    private Tag _selectedTag;
     private Recipe _selectedRecipe;
     private List<RecipeCategory> _selectedRecipeCategories = new();
     private List<RecipeIngredient> _selectedRecipeIngredients = new();
@@ -272,32 +310,45 @@
             _featuredLabel = SettingService.GetSetting(ModuleState.Settings, "FeaturedLabel", "Featured Recipes");
 
             _categories = await RecipeService.GetCategoriesAsync(ModuleState.ModuleId);
-            _tags = await RecipeService.GetTagsAsync(ModuleState.ModuleId); // <-- Load tags
+            _tags = await RecipeService.GetTagsAsync(ModuleState.ModuleId);
 
+            // Parse tagId from query string
+            if (PageState.QueryString.ContainsKey("tagId") && int.TryParse(PageState.QueryString["tagId"], out var tagId))
+            {
+                _selectedCategoryId = null;
+                _selectedRecipeId = null;
+                _selectedTagId = tagId;
+                _selectedTag = _tags.FirstOrDefault(t => t.TagId == tagId);
+                _recipesByTag = await GetRecipesByTagAsync(tagId);
+                SetPageTitle(_selectedTag?.Name + " " + Localizer["Recipes"] ?? Localizer["Tag"] + " - " + Localizer["Recipes"]);
+            }
             // Parse categoryId from query string
-            if (PageState.QueryString.ContainsKey("catId") && int.TryParse(PageState.QueryString["catId"], out var catId))
+            else if (PageState.QueryString.ContainsKey("catId") && int.TryParse(PageState.QueryString["catId"], out var catId))
             {
                 _selectedCategoryId = catId;
                 _selectedRecipeId = null;
+                _selectedTagId = null;
                 _selectedCategory = _categories.FirstOrDefault(c => c.CategoryId == catId);
                 _recipesByCategory = await GetRecipesByCategoryAsync(catId);
-                SetPageTitle(_selectedCategory?.Name ?? Localizer["Category"] + " - " + Localizer["Recipes"]);
+                SetPageTitle(_selectedCategory?.Name + " " + Localizer["Recipes"] ?? Localizer["Category"] + " - " + Localizer["Recipes"]);
             }
             // Parse recipeId from query string
             else if (PageState.QueryString.ContainsKey("id") && int.TryParse(PageState.QueryString["id"], out var recipeId))
             {
                 _selectedCategoryId = null;
                 _selectedRecipeId = recipeId;
+                _selectedTagId = null;
                 _selectedRecipe = await RecipeService.GetRecipeAsync(recipeId, ModuleState.ModuleId);
                 _selectedRecipeCategories = await RecipeService.GetRecipeCategoriesAsync(recipeId, ModuleState.ModuleId);
                 _selectedRecipeIngredients = await RecipeService.GetRecipeIngredientsAsync(recipeId, ModuleState.ModuleId);
                 _selectedRecipeSteps = await RecipeService.GetStepsAsync(recipeId, ModuleState.ModuleId);
-                SetPageTitle(_selectedRecipe?.Name ?? Localizer["RecipeDetails"]);
+                SetPageTitle(_selectedRecipe?.Name + " " + Localizer["Recipe"] ?? Localizer["RecipeDetails"]);
             }
             else
             {
                 _selectedRecipeId = null;
                 _selectedCategoryId = null;
+                _selectedTagId = null;
                 _featuredRecipes = (await RecipeService.GetRecipesAsync(ModuleState.ModuleId))
                     .Where(r => r.IsFeatured && r.IsActive)
                     .OrderByDescending(r => r.ModifiedOn)
@@ -337,29 +388,43 @@
         return recipesInCategory;
     }
 
+    private async Task<List<Recipe>> GetRecipesByTagAsync(int tagId)
+    {
+        var allRecipes = await RecipeService.GetRecipesAsync(ModuleState.ModuleId);
+        var recipesWithTag = new List<Recipe>();
+        foreach (var recipe in allRecipes)
+        {
+            var tags = await RecipeService.GetRecipeTagsAsync(recipe.RecipeId, ModuleState.ModuleId);
+            if (tags.Any(t => t.TagId == tagId))
+            {
+                recipesWithTag.Add(recipe);
+            }
+        }
+        return recipesWithTag;
+    }
+
     private string FormatQuantity(decimal quantity)
     {
-        // Handle whole numbers
         if (quantity % 1 == 0)
             return ((int)quantity).ToString();
 
-        // Get whole and fractional parts
         int whole = (int)Math.Floor(quantity);
         decimal fraction = quantity - whole;
 
-        // Common fractions
         var fractions = new Dictionary<decimal, string>
-    {
-        { 0.5m, "1/2" },
-        { 0.25m, "1/4" },
-        { 0.75m, "3/4" },
-        { 0.333m, "1/3" },
-        { 0.666m, "2/3" },
-        { 0.2m, "1/5" },
-        { 0.4m, "2/5" },
-        { 0.6m, "3/5" },
-        { 0.8m, "4/5" }
-    };
+        {
+            { 0.5m, "1/2" },
+            { 0.25m, "1/4" },
+            { 0.75m, "3/4" },
+            { 0.333m, "1/3" },
+            { 0.666m, "2/3" },
+            { 0.2m, "1/5" },
+            { 0.4m, "2/5" },
+            { 0.6m, "3/5" },
+            { 0.8m, "4/5" },
+            { 0.125m, "1/8" },
+            { 0.0625m, "1/16" }
+        };
 
         string fractionStr = null;
         foreach (var kvp in fractions)
@@ -371,7 +436,6 @@
             }
         }
 
-        // If not a common fraction, try to convert to x/y
         if (fractionStr == null && fraction > 0)
         {
             int denominator = 1;
@@ -436,7 +500,6 @@
 
     private RenderFragment RenderCategoryNavigation(IEnumerable<CategoryModel> items) => builder =>
     {
-        
         int seq = 0;
         builder.OpenElement(seq++, "div");
         builder.AddAttribute(seq++, "class", "category-nav");

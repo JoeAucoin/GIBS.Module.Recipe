@@ -473,7 +473,7 @@
     private List<RecipeCategory> _recipeCategories;
     private HashSet<int> _selectedCategoryIds = new HashSet<int>();
 
-     // Tag/RecipeTag state
+    // Tag/RecipeTag state
     private List<Tag> _allTags;
     private List<RecipeTag> _recipeTags;
     private RecipeTag _newRecipeTag = new RecipeTag();
@@ -531,13 +531,13 @@
                     await LoadIngredients();
                     await LoadSteps();
                     _newStep.Name = $"Step {((_steps?.Count ?? 0) + 1).ToString("D2")}:";
-                    
+
                 }
-          
+
                 await LoadRecipeCategories();
-                 await LoadTags();
-                 await LoadRecipeTags();
-        
+                await LoadTags();
+                await LoadRecipeTags();
+
             }
         }
         catch (Exception ex)
@@ -547,7 +547,7 @@
         }
     }
 
-      private async Task LoadTags()
+    private async Task LoadTags()
     {
         _allTags = await RecipeService.GetTagsAsync(ModuleState.ModuleId);
     }
@@ -589,6 +589,7 @@
             if (savedTag != null)
             {
                 _newRecipeTag.TagId = savedTag.TagId;
+                await SaveRecipeTag();
                 StateHasChanged();
             }
         }

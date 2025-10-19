@@ -114,6 +114,8 @@ else
         if (_editingTag.TagId == 0)
             await RecipeService.AddTagAsync(_editingTag);
         else
+            //_editingTag.ModifiedBy = PageState.User.DisplayName;
+            //_editingTag.ModifiedOn = DateTime.UtcNow;
             await RecipeService.UpdateTagAsync(_editingTag);
 
         await LoadTags();

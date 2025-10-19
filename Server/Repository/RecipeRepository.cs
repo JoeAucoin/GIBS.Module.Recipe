@@ -5,6 +5,7 @@ using Oqtane.Modules;
 using Oqtane.Repository;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -340,7 +341,17 @@ namespace GIBS.Module.Recipe.Repository
             var existing = _db.Tag.Find(tag.TagId);
             if (existing != null)
             {
-                _db.Entry(existing).CurrentValues.SetValues(tag);
+                // Only update fields that are allowed to change
+                existing.Name = tag.Name;
+                existing.ModuleId = tag.ModuleId;
+                // Do NOT overwrite CreatedBy/CreatedOn
+                existing.ModifiedBy = tag.ModifiedBy;
+                existing.ModifiedOn = tag.ModifiedOn;
+                // Save changes
+                _db.SaveChanges();
+                return existing;
+
+               // _db.Entry(existing).CurrentValues.SetValues(tag);
             }
             else
             {
@@ -350,6 +361,40 @@ namespace GIBS.Module.Recipe.Repository
             _db.SaveChanges();
             return tag;
         }
+
+        //public Tag UpdateTag(Tag tag)
+        //{
+        //    var existing = _db.Tag.Find(tag.TagId);
+        //    if (existing != null)
+        //    {
+        //        // Only update fields that are allowed to change
+        //        existing.ModuleId = tag.ModuleId;
+        //        // Do NOT overwrite CreatedBy/CreatedOn
+        //        existing.ModifiedBy = string.IsNullOrWhiteSpace(tag.ModifiedBy)
+        //            ? (existing.ModifiedBy ?? existing.CreatedBy ?? "system")
+        //            : tag.ModifiedBy;
+        //        existing.ModifiedOn = tag.ModifiedOn != default
+        //            ? tag.ModifiedOn
+        //            : DateTime.UtcNow;
+        //        _db.SaveChanges();
+        //        return existing;
+        //    }
+        //    else
+        //    {
+        //        // Attach if not tracked
+        //        _db.Tag.Attach(tag);
+
+        //        // Ensure audit fields are set
+        //        if (string.IsNullOrWhiteSpace(tag.ModifiedBy))
+        //            tag.ModifiedBy = tag.CreatedBy ?? "system";
+        //        if (tag.ModifiedOn == default)
+        //            tag.ModifiedOn = DateTime.UtcNow;
+
+        //        _db.Entry(tag).State = EntityState.Modified;
+        //        _db.SaveChanges();
+        //        return tag;
+        //    }
+        //}
 
         public void DeleteTag(int tagId)
         {
