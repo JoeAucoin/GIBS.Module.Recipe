@@ -68,6 +68,8 @@ else
 @code {
     //public override string RenderMode => RenderModes.Static;
 
+    public override bool UseAdminContainer => false;
+
     public override List<Resource> Resources => new List<Resource>()
     {
         new Resource { ResourceType = ResourceType.Stylesheet, Url = ModulePath() + "Module.css" },

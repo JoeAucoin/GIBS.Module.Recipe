@@ -429,14 +429,14 @@
     private bool validated = false;
 
     private int _id;
-    private string _name;
-    private string _description;
-    private string _instructions;
+    private string _name = string.Empty;
+    private string _description = string.Empty;
+    private string _instructions = string.Empty;
     private int _servings;
-    private string _prepTime;
-    private string _cookTime;
+    private string _prepTime = string.Empty;
+    private string _cookTime = string.Empty;
 
-    public string _slug;
+    public string _slug = string.Empty;
 
     private List<RecipeIngredient> _recipeIngredients;
     private List<Ingredient> _allIngredients;
@@ -508,36 +508,44 @@
 
             if (PageState.Action == "Edit")
             {
-                _id = Int32.Parse(PageState.QueryString["id"]);
-                Models.Recipe recipe = await RecipeService.GetRecipeAsync(_id, ModuleState.ModuleId);
-                if (recipe != null)
+                if (PageState.QueryString != null && PageState.QueryString.TryGetValue("id", out var idStr) && int.TryParse(idStr, out var parsedId))
                 {
-                    _name = recipe.Name;
-                    _description = recipe.Description;
-                    _imageURL = recipe.ImageURL;
-                    _instructions = recipe.Instructions;
-                    _servings = recipe.Servings;
-                    _prepTime = recipe.PrepTime;
-                    _cookTime = recipe.CookTime;
-                    _slug = recipe.Slug;
-                    _isFeatured = recipe.IsFeatured;
-                    _isActive = recipe.IsActive;
+                    _id = parsedId;
+                    Models.Recipe recipe = await RecipeService.GetRecipeAsync(_id, ModuleState.ModuleId);
+                    if (recipe != null)
+                    {
+                        _name = recipe.Name;
+                        _description = recipe.Description;
+                        _imageURL = recipe.ImageURL;
+                        _instructions = recipe.Instructions;
+                        _servings = recipe.Servings;
+                        _prepTime = recipe.PrepTime;
+                        _cookTime = recipe.CookTime;
+                        _slug = recipe.Slug;
+                        _isFeatured = recipe.IsFeatured;
+                        _isActive = recipe.IsActive;
 
-                    _createdby = recipe.CreatedBy;
-                    _createdon = recipe.CreatedOn;
-                    _modifiedby = recipe.ModifiedBy;
-                    _modifiedon = recipe.ModifiedOn;
+                        _createdby = recipe.CreatedBy;
+                        _createdon = recipe.CreatedOn;
+                        _modifiedby = recipe.ModifiedBy;
+                        _modifiedon = recipe.ModifiedOn;
 
-                    await LoadIngredients();
-                    await LoadSteps();
-                    _newStep.Name = $"Step {((_steps?.Count ?? 0) + 1).ToString("D2")}:";
+                        await LoadIngredients();
+                        await LoadSteps();
+                        _newStep.Name = $"Step {((_steps?.Count ?? 0) + 1).ToString("D2")}:";
+
+                    }
+
+                    await LoadRecipeCategories();
+                    await LoadTags();
+                    await LoadRecipeTags();
 
                 }
-
-                await LoadRecipeCategories();
-                await LoadTags();
-                await LoadRecipeTags();
-
+                else
+                {
+                    AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+                    return;
+                }
             }
         }
         catch (Exception ex)
@@ -678,58 +686,58 @@
     }
 
     private async Task Save()
-{
-    try
     {
-        validated = true;
-        var interop = new Oqtane.UI.Interop(JSRuntime);
-        if (await interop.FormValid(form))
+        try
         {
-            if (PageState.Action == "Add")
+            validated = true;
+            var interop = new Oqtane.UI.Interop(JSRuntime);
+            if (await interop.FormValid(form))
             {
-                Models.Recipe recipe = new Models.Recipe();
-                recipe.ModuleId = ModuleState.ModuleId;
-                recipe.Name = _name;
-                recipe.Description = _description;
-                recipe.Instructions = _instructions;
-                recipe.Servings = _servings;
-                recipe.PrepTime = _prepTime;
-                recipe.CookTime = _cookTime;
-                recipe.Slug = _slug;
-                recipe.ImageURL = _imageURL;
-                recipe.IsActive = _isActive;
-                recipe.IsFeatured = _isFeatured;
-                recipe = await RecipeService.AddRecipeAsync(recipe);
-                await logger.LogInformation("Recipe Added {Recipe}", recipe);
+                if (PageState.Action == "Add")
+                {
+                    Models.Recipe recipe = new Models.Recipe();
+                    recipe.ModuleId = ModuleState.ModuleId;
+                    recipe.Name = _name;
+                    recipe.Description = _description;
+                    recipe.Instructions = _instructions;
+                    recipe.Servings = _servings;
+                    recipe.PrepTime = _prepTime;
+                    recipe.CookTime = _cookTime;
+                    recipe.Slug = _slug;
+                    recipe.ImageURL = _imageURL;
+                    recipe.IsActive = _isActive;
+                    recipe.IsFeatured = _isFeatured;
+                    recipe = await RecipeService.AddRecipeAsync(recipe);
+                    await logger.LogInformation("Recipe Added {Recipe}", recipe);
 
-                // Set _id to new RecipeId
-                _id = recipe.RecipeId;
+                    // Set _id to new RecipeId
+                    _id = recipe.RecipeId;
 
-                // Save selected categories for the new recipe
-                await UpdateRecipeCategories();
+                    // Save selected categories for the new recipe
+                    await UpdateRecipeCategories();
 
-                PageState.Action = "Edit";
-                StateHasChanged();
-            }
-            else
-            {
-                Models.Recipe recipe = await RecipeService.GetRecipeAsync(_id, ModuleState.ModuleId);
-                recipe.Name = _name;
-                recipe.Description = _description;
-                recipe.Instructions = _instructions;
-                recipe.Servings = _servings;
-                recipe.PrepTime = _prepTime;
-                recipe.CookTime = _cookTime;
-                recipe.Slug = _slug;
-                recipe.ImageURL = _imageURL;
-                recipe.IsActive = _isActive;
-                recipe.IsFeatured = _isFeatured;
-                await RecipeService.UpdateRecipeAsync(recipe);
+                    PageState.Action = "Edit";
+                    StateHasChanged();
+                }
+                else
+                {
+                    Models.Recipe recipe = await RecipeService.GetRecipeAsync(_id, ModuleState.ModuleId);
+                    recipe.Name = _name;
+                    recipe.Description = _description;
+                    recipe.Instructions = _instructions;
+                    recipe.Servings = _servings;
+                    recipe.PrepTime = _prepTime;
+                    recipe.CookTime = _cookTime;
+                    recipe.Slug = _slug;
+                    recipe.ImageURL = _imageURL;
+                    recipe.IsActive = _isActive;
+                    recipe.IsFeatured = _isFeatured;
+                    await RecipeService.UpdateRecipeAsync(recipe);
 
-                // Update RecipeCategory associations
-                await UpdateRecipeCategories();
+                    // Update RecipeCategory associations
+                    await UpdateRecipeCategories();
 
-                await logger.LogInformation("Recipe Updated {Recipe}", new RecipeDto
+                    await logger.LogInformation("Recipe Updated {Recipe}", new RecipeDto
                 {
                     RecipeId = recipe.RecipeId,
                     ModuleId = recipe.ModuleId,
@@ -748,33 +756,38 @@
                     ModifiedBy = recipe.ModifiedBy,
                     ModifiedOn = recipe.ModifiedOn
                 });
-                AddModuleMessage(Localizer["Success.Update"], MessageType.Success);
-                validated = false;
+                    AddModuleMessage(Localizer["Success.Update"], MessageType.Success);
+                    validated = false;
+                }
+            }
+            else
+            {
+                AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
             }
         }
-        else
+        catch (Exception ex)
         {
-            AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
+            await logger.LogError(ex, "Error Saving Recipe {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
         }
     }
-    catch (Exception ex)
-    {
-        await logger.LogError(ex, "Error Saving Recipe {Error}", ex.Message);
-        AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
-    }
-}
 
     private async Task SaveIngredient()
     {
         try
         {
             // Validate ingredient selection
-            if (_newRecipeIngredient.IngredientId == 0 || !_allIngredients.Any(i => i.IngredientId == _newRecipeIngredient.IngredientId))
+            // if (_newRecipeIngredient.IngredientId == 0 || !_allIngredients.Any(i => i.IngredientId == _newRecipeIngredient.IngredientId))
+            // {
+            //     AddModuleMessage("Please select a valid ingredient.", MessageType.Warning);
+            //     return;
+            // }
+            if (_newRecipeIngredient.IngredientId == 0 || _allIngredients == null || !_allIngredients.Any(i => i.IngredientId == _newRecipeIngredient.IngredientId))
             {
                 AddModuleMessage("Please select a valid ingredient.", MessageType.Warning);
                 return;
             }
-            
+
             if (_newRecipeIngredient.IngredientId != 0 && _newRecipeIngredient.UnitId != 0 && _newRecipeIngredient.Quantity > 0)
             {
                 if (_editingIngredient == null) // Add new
@@ -823,7 +836,7 @@
         };
     }
 
-    private async void HandleFileUpload(int fileId)
+    private async Task HandleFileUpload(int fileId)
     {
         if (fileId > 0)
         {
@@ -907,7 +920,7 @@
         }
     }
 
-    private async void HandleStepFileUpload(int fileId)
+    private async Task HandleStepFileUpload(int fileId)
     {
         if (fileId > 0)
         {
