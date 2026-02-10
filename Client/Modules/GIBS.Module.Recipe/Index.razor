@@ -1,6 +1,7 @@
 @using GIBS.Module.Recipe.Services
 @using GIBS.Module.Recipe.Models
 @using CategoryModel = GIBS.Module.Recipe.Models.Category
+@using System.Net
 
 @namespace GIBS.Module.Recipe
 @inherits ModuleBase
@@ -331,6 +332,7 @@
                 _selectedCategory = _categories.FirstOrDefault(c => c.CategoryId == catId);
                 _recipesByCategory = await GetRecipesByCategoryAsync(catId);
                 SetPageTitle(_selectedCategory?.Name + " " + Localizer["Recipes"] ?? Localizer["Category"] + " - " + Localizer["Recipes"]);
+                AddHeadContent($"<meta name=\"description\" content=\"{WebUtility.HtmlEncode(_selectedCategory.Name)} Recipes\" />");
             }
             // Parse recipeId from query string
             else if (PageState.QueryString.ContainsKey("id") && int.TryParse(PageState.QueryString["id"], out var recipeId))
@@ -343,6 +345,20 @@
                 _selectedRecipeIngredients = await RecipeService.GetRecipeIngredientsAsync(recipeId, ModuleState.ModuleId);
                 _selectedRecipeSteps = await RecipeService.GetStepsAsync(recipeId, ModuleState.ModuleId);
                 SetPageTitle(_selectedRecipe?.Name + " " + Localizer["Recipe"] ?? Localizer["RecipeDetails"]);
+                AddHeadContent($"<meta name=\"description\" content=\"{WebUtility.HtmlEncode(_selectedRecipe.Name)} - {WebUtility.HtmlEncode(_selectedRecipe.Description)}\" />");
+                
+                var recipeName = WebUtility.HtmlEncode(_selectedRecipe.Name);
+                var imageUrl = _selectedRecipe.ImageURL ?? ModulePath() + "/images/no-image.png";
+                var baseUrl = PageState.Alias.Protocol + PageState.Alias.Name;
+                var recipeImage = WebUtility.HtmlEncode(baseUrl + imageUrl);
+                var recipeDescription = WebUtility.HtmlEncode(_selectedRecipe.Description);
+                var pageUrl = WebUtility.HtmlEncode(baseUrl + NavigateUrl() + $"?id={recipeId}&details={_selectedRecipe.Slug}");
+                
+                AddHeadContent($"<meta property=\"og:title\" content=\"{recipeName}\" />");
+                AddHeadContent($"<meta property=\"og:description\" content=\"{recipeDescription}\" />");
+                AddHeadContent($"<meta property=\"og:image\" content=\"{recipeImage}\" />");
+                AddHeadContent($"<meta property=\"og:url\" content=\"{pageUrl}\" />");
+                AddHeadContent("<meta property=\"og:type\" content=\"website\" />");
             }
             else
             {

@@ -150,4 +150,25 @@
   <data name="Steps" xml:space="preserve">
     <value>Preparation</value>
   </data>
+  <data name="PrepTime" xml:space="preserve">
+    <value>Prep Time</value>
+  </data>
+  <data name="Servings" xml:space="preserve">
+    <value>Servings</value>
+  </data>
+  <data name="CookTime" xml:space="preserve">
+    <value>Cook Time</value>
+  </data>
+  <data name="Ingredients" xml:space="preserve">
+    <value>Ingredients</value>
+  </data>
+  <data name="NoRecipeFound" xml:space="preserve">
+    <value>No Recipe Found</value>
+  </data>
+  <data name="NoRecipesFound" xml:space="preserve">
+    <value>No Recipes Found</value>
+  </data>
+  <data name="Uncategorized" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
 </root>
