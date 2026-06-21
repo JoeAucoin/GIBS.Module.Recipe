@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "GIBS.Module.Recipe.Client": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54762;http://localhost:54763"
+    }
+  }
+}

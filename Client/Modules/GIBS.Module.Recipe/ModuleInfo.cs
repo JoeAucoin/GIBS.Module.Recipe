@@ -9,9 +9,9 @@ namespace GIBS.Module.Recipe
         {
             Name = "Recipe",
             Description = "Recipe Module for Oqtane",
-            Version = "1.0.0",
+            Version = "1.0.1",
             ServerManagerType = "GIBS.Module.Recipe.Manager.RecipeManager, GIBS.Module.Recipe.Server.Oqtane",
-            ReleaseVersions = "1.0.0",
+            ReleaseVersions = "1.0.0,1.0.1",
             Dependencies = "GIBS.Module.Recipe.Shared.Oqtane",
             PackageName = "GIBS.Module.Recipe" 
         };
